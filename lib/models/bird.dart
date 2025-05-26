@@ -122,4 +122,14 @@ class Bird extends HiveObject {
         return 'Other';
     }
   }
+
+  // Extracts chicken type (Layer/Dual) from notes if present
+  String? get chickenType {
+    if (type != BirdType.chicken) return null;
+    final match = RegExp(r'Chicken Type: (Layer|Dual)').firstMatch(notes);
+    if (match != null) {
+      return match.group(1);
+    }
+    return null;
+  }
 }

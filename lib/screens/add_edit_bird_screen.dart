@@ -46,20 +46,73 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
   // breed dropdown options //
   final Map<BirdType, List<String>> _breedOptions = {
     BirdType.chicken: [
+      'Orpington',
+      'Easter Egger',
+      'Silkie',
+      'Cream Legbar',
+      'Ameraucana',
+      'Cochin',
+      'Wyandotte',
+      'Barnevelder',
+      'Andalusian',
+      'Barred Plymouth',
+      'White Plymouth',
+      'Silver Penciled Plymouth',
+      'Australorp',
+      'Maran',
+      'Wellsummer',
+      'Buckeye',
+      'Salmon Faverolle',
+      'Campine',
+      'Deathlayer',
+      'Hamburg',
+      'Speckled Sussex',
+      'Dorking',
+      'Golden Buff',
+      'ISA',
+      'Austra White',
       'Rhode Island Red',
       'Plymouth Rock',
       'Leghorn',
       'Sussex',
+      'Bantams',
       'Other',
     ],
-    BirdType.duck: ['Pekin', 'Khaki Campbell', 'Rouen', 'Muscovy', 'Other'],
+    BirdType.duck: [
+      'Pekin',
+      'Jumbo Pekin',
+      'Khaki Campbell',
+      'Rouen',
+      'Muscovy',
+      'Khelsh Hartegwin',
+      'Runner',
+      'Cayuqa',
+      'Silver Appleyard',
+      'Magpie',
+      'Gold 300 Hybid',
+      'Buff',
+      'White Crested',
+      'Other',
+    ],
     BirdType.turkey: [
       'Broad Breasted White',
+      'Black Slate',
+      'Blue Slate',
+      'Royal Palm',
       'Bourbon Red',
       'Narragansett',
       'Other',
     ],
-    BirdType.goose: ['Embden', 'Toulouse', 'African', 'Chinese', 'Other'],
+    BirdType.goose: [
+      'Tufted Roman',
+      'Buff',
+      'Sebastopol',
+      'Embden',
+      'Toulouse',
+      'African',
+      'Chinese',
+      'Other',
+    ],
     BirdType.other: ['Other'],
   };
 
@@ -70,6 +123,46 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
   BandColor? _bandColorOrNull;
 
   DateTime? _replacementDate;
+
+  // Add a new field for chicken type
+  String? _chickenType; // "Layer", "Dual", or null
+  String? _runnerColorType; // For Runner duck
+  String? _toulouseColorType; // For Toulouse goose
+  String? _chickenColorType; // For special chicken breeds
+
+  // Map of chicken breeds to their color/type options
+  final Map<String, List<String>> _chickenColorTypeOptions = {
+    'Orpington': [
+      'Chocolate', 'Blue', 'Buff', 'Jubilee', 'Lavender', 'Black Split to Lander'
+    ],
+    'Ameraucana': [
+      'Blue', 'Black', 'Splash'
+    ],
+    'Wyandotte': [
+      'Blue Laced Red', 'Splashed Laced Red', 'Black Laced Red', 'Black Laced Golden', 'Black Laced Silver', 'Other'
+    ],
+    'Andalusian': [
+      'Blue', 'Black', 'Splash'
+    ],
+    'Australorp': [
+      'Black', 'Blue'
+    ],
+    'Maran': [
+      'Black Copper', 'Blue Copper', 'Cuckoo', 'French Blacktailed', 'Black', 'Wheaton', 'White', 'Golden Cuckoo', 'Splash'
+    ],
+    'Deathlayer': [
+      'Gold', 'Silver'
+    ],
+    'Dorking': [
+      'Silver', 'Red'
+    ],
+    'Cochin': [
+      'White', 'Partridge', 'Calico', 'Blue', 'Black', 'Barred', 'Buff', 'Bircher', 'Speckled', 'Golden Laced', 'Silver Laced', 'Splash'
+    ],
+    'Easter Egger': [
+      'Frizzler', 'Blue', 'Green'
+    ],
+  };
 
   @override
   void initState() {
@@ -103,10 +196,14 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
     _filteredBreeds = _breedOptions[_birdType]!;
     _locationSuggestions = [];
     // RESTORES //
-    if (widget.birdToEdit != null && widget.birdToEdit!.source == SourceType.store && widget.birdToEdit!.isAlive == false) {
-      if (widget.birdToEdit!.healthStatus == 'unviable' || widget.birdToEdit!.healthStatus == 'damaged') {
+    if (widget.birdToEdit != null &&
+        widget.birdToEdit!.source == SourceType.store &&
+        widget.birdToEdit!.isAlive == false) {
+      if (widget.birdToEdit!.healthStatus == 'unviable' ||
+          widget.birdToEdit!.healthStatus == 'damaged') {
         _deadStatus = widget.birdToEdit!.healthStatus;
-      } else if (widget.birdToEdit!.healthStatus != null && widget.birdToEdit!.healthStatus!.startsWith('damaged:')) {
+      } else if (widget.birdToEdit!.healthStatus != null &&
+          widget.birdToEdit!.healthStatus!.startsWith('damaged:')) {
         _deadStatus = 'damaged';
         _damageNotes = widget.birdToEdit!.healthStatus!.substring(8).trim();
       }
@@ -114,7 +211,8 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
 
     if (widget.birdToEdit != null) {
       if (!BandColor.values.contains(widget.birdToEdit!.bandColor) ||
-          (widget.birdToEdit!.customBandColor != null && widget.birdToEdit!.customBandColor!.isNotEmpty)) {
+          (widget.birdToEdit!.customBandColor != null &&
+              widget.birdToEdit!.customBandColor!.isNotEmpty)) {
         _customBandColor = widget.birdToEdit!.customBandColor ?? '';
         _bandColorOrNull = null;
       } else {
@@ -124,10 +222,51 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
       _bandColorOrNull = BandColor.none;
     }
 
-    if (widget.birdToEdit != null && widget.birdToEdit!.notes.contains('Replacement Date:')) {
-      final match = RegExp(r'Replacement Date:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})').firstMatch(widget.birdToEdit!.notes);
+    if (widget.birdToEdit != null &&
+        widget.birdToEdit!.notes.contains('Replacement Date:')) {
+      final match = RegExp(
+        r'Replacement Date:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})',
+      ).firstMatch(widget.birdToEdit!.notes);
       if (match != null) {
         _replacementDate = DateTime.tryParse(match.group(1)!);
+      }
+    }
+
+    // Restore chicken type if editing and type is chicken
+    if (widget.birdToEdit != null &&
+        widget.birdToEdit!.type == BirdType.chicken) {
+      final notes = widget.birdToEdit!.notes;
+      if (notes.contains('Chicken Type: Layer')) {
+        _chickenType = 'Layer';
+      } else if (notes.contains('Chicken Type: Dual')) {
+        _chickenType = 'Dual';
+      }
+
+      // Restore chicken color/type for special breeds
+      final breed = widget.birdToEdit!.breed;
+      if (_chickenColorTypeOptions.containsKey(breed)) {
+        final match = RegExp('${breed.replaceAll(' ', '')} Color/Type: ([^\n]+)').firstMatch(notes);
+        if (match != null) {
+          _chickenColorType = match.group(1);
+        }
+      }
+    }
+
+    // Restore Runner duck color/type if editing
+    if (widget.birdToEdit != null && widget.birdToEdit!.type == BirdType.duck && widget.birdToEdit!.breed == 'Runner') {
+      final notes = widget.birdToEdit!.notes;
+      final match = RegExp(r'Runner Color/Type: ([^\n]+)').firstMatch(notes);
+      if (match != null) {
+        _runnerColorType = match.group(1);
+      }
+    }
+
+    // Restore Toulouse goose color/type if editing
+    if (widget.birdToEdit != null && widget.birdToEdit!.type == BirdType.goose && widget.birdToEdit!.breed == 'Toulouse') {
+      final notes = widget.birdToEdit!.notes;
+      final match = RegExp(r'Toulouse Color/Type: ([^\n]+)').firstMatch(notes);
+      if (match != null) {
+        _toulouseColorType = match.group(1);
       }
     }
   }
@@ -214,8 +353,58 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
     if (_replacementDate != null) {
       final dateStr = _replacementDate!.toIso8601String().split('T').first;
       // remove any previous replacement date from notes
-      notesToSave = notesToSave.replaceAll(RegExp(r'Replacement Date:\s*[0-9]{4}-[0-9]{2}-[0-9]{2}\n?'), '');
-      notesToSave = (notesToSave.isNotEmpty ? notesToSave.trim() + '\n' : '') + 'Replacement Date: $dateStr';
+      notesToSave = notesToSave.replaceAll(
+        RegExp(r'Replacement Date:\s*[0-9]{4}-[0-9]{2}-[0-9]{2}\n?'),
+        '',
+      );
+      notesToSave =
+          '${notesToSave.isNotEmpty ? notesToSave.trim() + '\n' : ''}Replacement Date: $dateStr';
+    }
+
+    // Add chicken type to notes if chicken is selected
+    if (_birdType == BirdType.chicken && _chickenType != null) {
+      // Remove any previous chicken type from notes
+      notesToSave = notesToSave.replaceAll(
+        RegExp(r'Chicken Type: (Layer|Dual)\n?'),
+        '',
+      );
+      notesToSave =
+          (notesToSave.isNotEmpty ? notesToSave.trim() + '\n' : '') +
+          'Chicken Type: $_chickenType';
+    }
+
+    // Add chicken color/type for special breeds to notes
+    if (_birdType == BirdType.chicken && _chickenColorTypeOptions.containsKey(_breed) && _chickenColorType != null) {
+      // Remove any previous color/type for this breed
+      notesToSave = notesToSave.replaceAll(
+        RegExp('${_breed.replaceAll(' ', '')} Color/Type: [^\n]+\n?'),
+        '',
+      );
+      notesToSave =
+          (notesToSave.isNotEmpty ? notesToSave.trim() + '\n' : '') +
+          '${_breed.replaceAll(' ', '')} Color/Type: $_chickenColorType';
+    }
+
+    // Add Runner duck color/type to notes if selected
+    if (_birdType == BirdType.duck && _breed == 'Runner' && _runnerColorType != null) {
+      notesToSave = notesToSave.replaceAll(
+        RegExp(r'Runner Color/Type: [^\n]+\n?'),
+        '',
+      );
+      notesToSave =
+          (notesToSave.isNotEmpty ? notesToSave.trim() + '\n' : '') +
+          'Runner Color/Type: $_runnerColorType';
+    }
+
+    // Add Toulouse goose color/type to notes if selected
+    if (_birdType == BirdType.goose && _breed == 'Toulouse' && _toulouseColorType != null) {
+      notesToSave = notesToSave.replaceAll(
+        RegExp(r'Toulouse Color/Type: [^\n]+\n?'),
+        '',
+      );
+      notesToSave =
+          (notesToSave.isNotEmpty ? notesToSave.trim() + '\n' : '') +
+          'Toulouse Color/Type: $_toulouseColorType';
     }
 
     final bird = Bird(
@@ -300,6 +489,16 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                 onChanged: (value) {
                   setState(() {
                     _breed = value!;
+                    // Reset color/type dropdowns if breed changes
+                    if (_birdType == BirdType.duck && _breed != 'Runner') {
+                      _runnerColorType = null;
+                    }
+                    if (_birdType == BirdType.goose && _breed != 'Toulouse') {
+                      _toulouseColorType = null;
+                    }
+                    if (_birdType == BirdType.chicken && !_chickenColorTypeOptions.containsKey(_breed)) {
+                      _chickenColorType = null;
+                    }
                   });
                 },
                 validator: (value) {
@@ -321,6 +520,113 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                     }
                     return null;
                   },
+                ),
+              // Move color/type dropdowns right under breed
+              if (_birdType == BirdType.duck && _breed == 'Runner')
+                DropdownButtonFormField<String>(
+                  value: _runnerColorType,
+                  decoration: const InputDecoration(labelText: 'Color/Type'),
+                  items: const [
+                    DropdownMenuItem(value: 'Fawn & White', child: Text('Fawn & White')),
+                    DropdownMenuItem(value: 'Chocolate', child: Text('Chocolate')),
+                    DropdownMenuItem(value: 'Black', child: Text('Black')),
+                    DropdownMenuItem(value: 'Blue', child: Text('Blue')),
+                    DropdownMenuItem(value: 'Silver', child: Text('Silver')),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _runnerColorType = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please select color/type';
+                    }
+                    return null;
+                  },
+                ),
+              if (_birdType == BirdType.goose && _breed == 'Toulouse')
+                DropdownButtonFormField<String>(
+                  value: _toulouseColorType,
+                  decoration: const InputDecoration(labelText: 'Color/Type'),
+                  items: const [
+                    DropdownMenuItem(value: 'Normal', child: Text('Normal')),
+                    DropdownMenuItem(value: 'Buff', child: Text('Buff')),
+                    DropdownMenuItem(value: 'French', child: Text('French')),
+                    DropdownMenuItem(value: 'Large Dewlap', child: Text('Large Dewlap')),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _toulouseColorType = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please select color/type';
+                    }
+                    return null;
+                  },
+                ),
+              // Chicken color/type dropdown for special breeds
+              if (_birdType == BirdType.chicken && _chickenColorTypeOptions.containsKey(_breed))
+                DropdownButtonFormField<String>(
+                  value: _chickenColorType,
+                  decoration: const InputDecoration(labelText: 'Color/Type'),
+                  items: _chickenColorTypeOptions[_breed]!
+                      .map((type) => DropdownMenuItem(value: type, child: Text(type)))
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _chickenColorType = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please select color/type';
+                    }
+                    return null;
+                  },
+                ),
+              // Chicken type radio buttons (Layer/Dual) for chickens only
+              if (_birdType == BirdType.chicken)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 10),
+                    const Text('Chicken Type'),
+                    Row(
+                      children: [
+                        Radio<String>(
+                          value: 'Layer',
+                          groupValue: _chickenType,
+                          onChanged: (value) {
+                            setState(() {
+                              _chickenType = value;
+                            });
+                          },
+                        ),
+                        const Text('Layer'),
+                        Radio<String>(
+                          value: 'Dual',
+                          groupValue: _chickenType,
+                          onChanged: (value) {
+                            setState(() {
+                              _chickenType = value;
+                            });
+                          },
+                        ),
+                        const Text('Dual'),
+                      ],
+                    ),
+                    if (_chickenType == null || _chickenType!.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(left: 8.0),
+                        child: Text(
+                          'Please select chicken type',
+                          style: TextStyle(color: Colors.red, fontSize: 12),
+                        ),
+                      ),
+                  ],
                 ),
 
               // quantity //
@@ -600,10 +906,7 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                       child: Text(color.toString().split('.').last),
                     );
                   }),
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('other'),
-                  ),
+                  const DropdownMenuItem(value: null, child: Text('other')),
                 ],
                 onChanged: (value) {
                   setState(() {
@@ -620,7 +923,9 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
               if (_bandColorOrNull == null)
                 TextFormField(
                   initialValue: _customBandColor,
-                  decoration: const InputDecoration(labelText: 'Custom Band Color'),
+                  decoration: const InputDecoration(
+                    labelText: 'Custom Band Color',
+                  ),
                   onChanged: (value) {
                     _customBandColor = value;
                   },
@@ -628,7 +933,8 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                     _customBandColor = value;
                   },
                   validator: (value) {
-                    if ((_bandColorOrNull == null) && (value == null || value.isEmpty)) {
+                    if ((_bandColorOrNull == null) &&
+                        (value == null || value.isEmpty)) {
                       return 'Please enter a band color';
                     }
                     return null;
@@ -669,8 +975,8 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                       const SizedBox(width: 10),
                       Text(
                         _replacementDate == null
-                          ? 'Select replacement date'
-                          : DateFormat.yMd().format(_replacementDate!),
+                            ? 'Select replacement date'
+                            : DateFormat.yMd().format(_replacementDate!),
                       ),
                     ],
                   ),
@@ -707,7 +1013,10 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.remove_circle, color: Colors.red),
+                          icon: const Icon(
+                            Icons.remove_circle,
+                            color: Colors.red,
+                          ),
                           onPressed: () {
                             setState(() {
                               _additionalImages.remove(imageFile);
@@ -734,6 +1043,45 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                   ),
                 ],
               ),
+              // Subtle delete button at the bottom if editing
+              if (widget.birdToEdit != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 24.0),
+                  child: Center(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      label: const Text('Delete Bird', style: TextStyle(color: Colors.red)),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.red),
+                        foregroundColor: Colors.red,
+                      ),
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Delete Bird'),
+                            content: const Text('Are you sure you want to delete this bird? This cannot be undone.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(true),
+                                child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true) {
+                          final birdsProvider = Provider.of<BirdsProvider>(context, listen: false);
+                          birdsProvider.removeBird(widget.birdToEdit!.id);
+                          Navigator.of(context).pop();
+                        }
+                      },
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

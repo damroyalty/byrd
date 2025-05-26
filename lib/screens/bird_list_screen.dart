@@ -20,7 +20,9 @@ class _BirdListScreenState extends State<BirdListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final birds = Provider.of<BirdsProvider>(context).getBirdsByType(widget.birdType);
+    final birds = Provider.of<BirdsProvider>(
+      context,
+    ).getBirdsByType(widget.birdType);
     final bird = Bird(
       type: widget.birdType,
       breed: '',
@@ -38,10 +40,17 @@ class _BirdListScreenState extends State<BirdListScreen> {
     // search query //
     final filteredBirds = _searchQuery.isEmpty
         ? birds
-        : birds.where((b) =>
-            b.breed.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            b.location.toLowerCase().contains(_searchQuery.toLowerCase())
-          ).toList();
+        : birds
+              .where(
+                (b) =>
+                    b.breed.toLowerCase().contains(
+                      _searchQuery.toLowerCase(),
+                    ) ||
+                    b.location.toLowerCase().contains(
+                      _searchQuery.toLowerCase(),
+                    ),
+              )
+              .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -95,12 +104,20 @@ class _BirdListScreenState extends State<BirdListScreen> {
                   itemBuilder: (ctx, index) {
                     final bird = filteredBirds[index];
                     String? statusDetails;
-                    if (bird.isAlive == false && bird.healthStatus != null && bird.healthStatus!.isNotEmpty) {
+                    if (bird.isAlive == false &&
+                        bird.healthStatus != null &&
+                        bird.healthStatus!.isNotEmpty) {
                       statusDetails = bird.healthStatus;
                     }
                     String? customBandColor;
                     if (bird.notes.contains('Custom Band Color:')) {
-                      customBandColor = bird.notes.split('Custom Band Color:').last.trim().split('\n').first.trim();
+                      customBandColor = bird.notes
+                          .split('Custom Band Color:')
+                          .last
+                          .trim()
+                          .split('\n')
+                          .first
+                          .trim();
                     }
                     return ListTile(
                       leading: bird.imagePath != null
@@ -108,11 +125,17 @@ class _BirdListScreenState extends State<BirdListScreen> {
                               backgroundImage: FileImage(File(bird.imagePath!)),
                             )
                           : const CircleAvatar(child: Icon(Icons.pets)),
-                      title: Text(bird.location.isNotEmpty ? bird.location : 'No Location/Pin'),
+                      title: Text(
+                        bird.location.isNotEmpty
+                            ? bird.location
+                            : 'No Location/Pin',
+                      ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Breed: ${bird.breed}\nQty: ${bird.quantity} • ${bird.gender.toString().split('.').last}'),
+                          Text(
+                            'Breed: ${bird.breed}\nQty: ${bird.quantity} • ${bird.gender.toString().split('.').last}',
+                          ),
                           if (statusDetails != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 2.0),
@@ -127,10 +150,26 @@ class _BirdListScreenState extends State<BirdListScreen> {
                             ),
                         ],
                       ),
-                      trailing: Text(
-                        (bird.customBandColor != null && bird.customBandColor!.isNotEmpty)
-                          ? bird.customBandColor!
-                          : bird.bandColor.toString().split('.').last
+                      trailing: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            (bird.customBandColor != null &&
+                                    bird.customBandColor!.isNotEmpty)
+                                ? bird.customBandColor!
+                                : bird.bandColor.toString().split('.').last,
+                          ),
+                          if (bird.type == BirdType.chicken && bird.chickenType != null)
+                            Text(
+                              bird.chickenType!,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                        ],
                       ),
                       onTap: () {
                         Navigator.push(
@@ -174,7 +213,8 @@ class _BirdListScreenState extends State<BirdListScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => AddEditBirdScreen(birdType: widget.birdType),
+              builder: (context) =>
+                  AddEditBirdScreen(birdType: widget.birdType),
             ),
           );
         },

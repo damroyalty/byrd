@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter/animation.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../models/bird.dart';
@@ -222,21 +221,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // local device time
     final now = DateTime.now();
 
-    final birdsWithReplacement = Provider.of<BirdsProvider>(context)
-        .birds
+    final birdsWithReplacement = Provider.of<BirdsProvider>(context).birds
         .where((bird) {
-          final match = RegExp(r'Replacement Date:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})').firstMatch(bird.notes);
+          final match = RegExp(
+            r'Replacement Date:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})',
+          ).firstMatch(bird.notes);
           return match != null;
         })
         .map((bird) {
-          final match = RegExp(r'Replacement Date:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})').firstMatch(bird.notes);
+          final match = RegExp(
+            r'Replacement Date:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})',
+          ).firstMatch(bird.notes);
           final replacementDate = match != null ? match.group(1) : '';
-          final bandColor = (bird.customBandColor != null && bird.customBandColor!.isNotEmpty)
+          final bandColor =
+              (bird.customBandColor != null && bird.customBandColor!.isNotEmpty)
               ? bird.customBandColor!
               : bird.bandColor.toString().split('.').last;
           return {
-            'text': '${bird.typeName} | ${bird.breed} | ${bird.location} | $bandColor | Replacement: $replacementDate',
-            'replacementDate': replacementDate
+            'text':
+                '${bird.typeName} | ${bird.breed} | ${bird.location} | $bandColor | Replacement: $replacementDate',
+            'replacementDate': replacementDate,
           };
         })
         .toList();
@@ -403,8 +407,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     for (var i = 0; i < birdsWithReplacement.length; i++) {
                       final entry = birdsWithReplacement[i];
                       final text = entry['text'] as String;
-                      final replacementDate = entry['replacementDate'] as String;
-                      final replacementReg = RegExp(r'(Replacement:\s*[0-9]{4}-[0-9]{2}-[0-9]{2})');
+                      final replacementDate =
+                          entry['replacementDate'] as String;
+                      final replacementReg = RegExp(
+                        r'(Replacement:\s*[0-9]{4}-[0-9]{2}-[0-9]{2})',
+                      );
                       final match = replacementReg.firstMatch(text);
 
                       if (match != null) {
@@ -440,23 +447,30 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         }
 
                         spans.add(TextSpan(text: before, style: style));
-                        spans.add(TextSpan(
-                          text: replacementStr,
-                          style: style.copyWith(
-                            color: textColor,
-                            fontWeight: FontWeight.bold,
-                            shadows: glow,
+                        spans.add(
+                          TextSpan(
+                            text: replacementStr,
+                            style: style.copyWith(
+                              color: textColor,
+                              fontWeight: FontWeight.bold,
+                              shadows: glow,
+                            ),
                           ),
-                        ));
+                        );
                         spans.add(TextSpan(text: after, style: style));
                       } else {
                         spans.add(TextSpan(text: text, style: style));
                       }
                       if (i != birdsWithReplacement.length - 1) {
-                        spans.add(const TextSpan(
-                          text: '     •     ',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.brown),
-                        ));
+                        spans.add(
+                          const TextSpan(
+                            text: '     •     ',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.brown,
+                            ),
+                          ),
+                        );
                       }
                     }
 
@@ -466,7 +480,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       overflow: TextOverflow.visible,
                     );
 
-                    final plainText = birdsWithReplacement.map((e) => e['text'] as String).join('     •     ');
+                    final plainText = birdsWithReplacement
+                        .map((e) => e['text'] as String)
+                        .join('     •     ');
                     if (_lastMarqueeText != plainText) {
                       _lastMarqueeText = plainText;
                       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -478,7 +494,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     }
                     final containerWidth = constraints.maxWidth;
                     final totalWidth = _marqueeTextWidth + containerWidth + 40;
-                    final elapsed = _marqueeController.lastElapsedDuration?.inMilliseconds ?? 0;
+                    final elapsed =
+                        _marqueeController
+                            .lastElapsedDuration
+                            ?.inMilliseconds ??
+                        0;
                     final pixels = (elapsed / 1000.0) * _marqueeSpeed;
                     final offset = containerWidth - (pixels % totalWidth);
 
@@ -488,7 +508,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         decoration: BoxDecoration(
                           color: Colors.brown.withOpacity(0.07),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.brown.withOpacity(0.2)),
+                          border: Border.all(
+                            color: Colors.brown.withOpacity(0.2),
+                          ),
                         ),
                         child: Stack(
                           children: [
@@ -501,7 +523,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 child: Align(
                                   alignment: Alignment.centerLeft,
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12.0,
+                                    ),
                                     child: textWidget,
                                   ),
                                 ),
@@ -517,7 +541,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   child: Align(
                                     alignment: Alignment.centerLeft,
                                     child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12.0,
+                                      ),
                                       child: textWidget,
                                     ),
                                   ),
@@ -717,9 +743,7 @@ class _AnimatedGradientTextState extends State<AnimatedGradientText>
               colors: colors,
               stops: List.generate(
                 colors.length,
-                (i) => (i / (colors.length - 1) +
-                        _controller.value) %
-                    1.0,
+                (i) => (i / (colors.length - 1) + _controller.value) % 1.0,
               ),
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,

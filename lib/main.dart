@@ -1,6 +1,4 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart' show TextDirection;
 import 'package:provider/provider.dart';
 import 'providers/birds_provider.dart';
 import 'screens/home_screen.dart';
