@@ -426,7 +426,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ];
         return Dialog(
           backgroundColor: Colors.white.withOpacity(0.97),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
             child: Column(
@@ -447,31 +449,54 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     const Spacer(),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.black, size: 22),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.black,
+                        size: 22,
+                      ),
                       splashRadius: 18,
                       onPressed: () => Navigator.of(ctx).pop(),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
-                Divider(height: 18, thickness: 1, color: Colors.green.withOpacity(0.12)),
+                Divider(
+                  height: 18,
+                  thickness: 1,
+                  color: Colors.green.withOpacity(0.12),
+                ),
                 Column(
-                  children: links.map((link) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: ListTile(
-                      leading: Icon(link['icon'] as IconData, color: customTileGreen),
-                      title: Text(link['label'] as String, style: TextStyle(fontWeight: FontWeight.w500)),
-                      onTap: () async {
-                        final url = Uri.parse(link['url'] as String);
-                        if (await canLaunchUrl(url)) {
-                          await launchUrl(url, mode: LaunchMode.externalApplication);
-                        }
-                      },
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      tileColor: Colors.green[50],
-                      hoverColor: Colors.green[100],
-                    ),
-                  )).toList(),
+                  children: links
+                      .map(
+                        (link) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: ListTile(
+                            leading: Icon(
+                              link['icon'] as IconData,
+                              color: customTileGreen,
+                            ),
+                            title: Text(
+                              link['label'] as String,
+                              style: TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                            onTap: () async {
+                              final url = Uri.parse(link['url'] as String);
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(
+                                  url,
+                                  mode: LaunchMode.externalApplication,
+                                );
+                              }
+                            },
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            tileColor: Colors.green[50],
+                            hoverColor: Colors.green[100],
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
               ],
             ),
@@ -1529,7 +1554,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-                // support button (money icon) //
+                // support button //
                 Positioned(
                   bottom: 4,
                   left: 8,
@@ -1541,7 +1566,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       backgroundColor: Colors.white,
                       elevation: 2,
                       onPressed: _showSupportPopup,
-                      child: Icon(Icons.attach_money, color: Colors.green[800], size: 18),
+                      child: Icon(
+                        Icons.attach_money,
+                        color: Colors.green[800],
+                        size: 18,
+                      ),
                       mini: true,
                       tooltip: 'Support the dev',
                     ),
