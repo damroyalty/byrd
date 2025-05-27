@@ -21,6 +21,7 @@ dependencies:
   flutter_colorpicker: ^1.0.3
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+  shared_preferences: ^2.2.3
 
 dev_dependencies:
   flutter_test:
@@ -35,5 +36,6 @@ flutter:
     - assets/icons/goose.svg
     - assets/icons/turkey.svg
     - assets/icons/other.svg
+    - assets/icons/chicken.svg
   uses-material-design: true
 

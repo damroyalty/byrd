@@ -87,6 +87,8 @@ class Bird extends HiveObject {
   String notes;
   @HiveField(16)
   List<String> additionalImages;
+  @HiveField(17)
+  String? label;
 
   Bird({
     String? id,
@@ -106,6 +108,7 @@ class Bird extends HiveObject {
     required this.location,
     this.notes = '',
     this.additionalImages = const [],
+    this.label,
   }) : id = id ?? const Uuid().v4();
 
   String get typeName {
@@ -123,7 +126,7 @@ class Bird extends HiveObject {
     }
   }
 
-  // Extracts chicken type (Layer/Dual) from notes if present
+  // extracts chicken type (layer/dual) from notes if its there
   String? get chickenType {
     if (type != BirdType.chicken) return null;
     final match = RegExp(r'Chicken Type: (Layer|Dual)').firstMatch(notes);
