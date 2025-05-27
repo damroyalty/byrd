@@ -883,7 +883,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: _showSearchBar
                     ? SizedBox(
                         key: const ValueKey('searchBar'),
-                        width: 150,
+                        width: 185,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 6.0),
                           child: TextField(
@@ -897,7 +897,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             decoration: InputDecoration(
                               hintText: 'breed/location',
                               hintStyle: TextStyle(
-                                fontSize: 10,
+                                fontSize: 9,
                                 color: isDark ? Colors.white70 : Colors.black87,
                               ),
                               fillColor: isDark

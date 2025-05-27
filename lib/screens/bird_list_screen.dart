@@ -394,7 +394,7 @@ class _BirdListScreenState extends State<BirdListScreen> {
                 child: _showSearchBar
                     ? SizedBox(
                         key: const ValueKey('searchBar'),
-                        width: 150,
+                        width: 185,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 6.0),
                           child: TextField(
@@ -405,7 +405,7 @@ class _BirdListScreenState extends State<BirdListScreen> {
                             decoration: InputDecoration(
                               hintText: 'breed/location',
                               hintStyle: TextStyle(
-                                fontSize: 10,
+                                fontSize: 9,
                                 color: subtitleColor,
                               ),
                               fillColor: isDark
