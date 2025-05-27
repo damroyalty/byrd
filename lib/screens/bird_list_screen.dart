@@ -22,6 +22,12 @@ class BirdListScreen extends StatefulWidget {
 class _BirdListScreenState extends State<BirdListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  bool _showSearchBar = false;
+  final FocusNode _searchFocusNode = FocusNode(); // <-- add this
+  final Duration _searchAnimDuration = const Duration(
+    milliseconds: 250,
+  ); // animation duration
+
   // color picker //
   Color customBrown = Colors.brown;
   Color customTileGreen = const Color(0xFF388E3C);
@@ -218,8 +224,8 @@ class _BirdListScreenState extends State<BirdListScreen> {
                     },
                   ),
                   Positioned(
-                    top: 150,
-                    right: 0,
+                    top: 30,
+                    right: 0, // <-- move from 10 to 0 for closer to the right edge
                     child: IconButton(
                       icon: const Icon(
                         Icons.close,
@@ -284,6 +290,21 @@ class _BirdListScreenState extends State<BirdListScreen> {
   void initState() {
     super.initState();
     _loadColors();
+    _searchFocusNode.addListener(() {
+      if (!_searchFocusNode.hasFocus && _showSearchBar) {
+        setState(() {
+          _showSearchBar = false;
+          _searchController.clear();
+          _searchQuery = '';
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchFocusNode.dispose(); // <-- add this
+    super.dispose();
   }
 
   @override
@@ -366,48 +387,91 @@ class _BirdListScreenState extends State<BirdListScreen> {
             ),
             titleSpacing: 4.0,
             actions: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 8.0,
-                  horizontal: 8.0,
+              AnimatedSwitcher(
+                duration: _searchAnimDuration,
+                transitionBuilder: (child, animation) => SizeTransition(
+                  sizeFactor: animation,
+                  axis: Axis.horizontal,
+                  child: child,
                 ),
-                child: SizedBox(
-                  width: 205,
-                  height: 40,
-                  child: TextField(
-                    controller: _searchController,
-                    style: TextStyle(fontSize: 11, color: textColor),
-                    decoration: InputDecoration(
-                      hintText: 'Search breed/location',
-                      hintStyle: TextStyle(fontSize: 11, color: subtitleColor),
-                      fillColor: isDark ? Colors.grey[900] : Colors.white,
-                      filled: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 10,
+                child: _showSearchBar
+                    ? SizedBox(
+                        key: const ValueKey('searchBar'),
+                        width: 200,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6.0),
+                          child: TextField(
+                            controller: _searchController,
+                            focusNode: _searchFocusNode, // <-- add this
+                            autofocus: true,
+                            style: TextStyle(fontSize: 14, color: textColor),
+                            decoration: InputDecoration(
+                              hintText: 'breed/location',
+                              hintStyle: TextStyle(
+                                fontSize: 13,
+                                color: subtitleColor,
+                              ),
+                              fillColor: isDark
+                                  ? Colors.grey[900]
+                                  : Colors.white,
+                              filled: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 10,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(20),
+                                borderSide: BorderSide.none,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.search,
+                                size: 20,
+                                color: subtitleColor,
+                              ),
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: () {
+                                  setState(() {
+                                    _showSearchBar = false;
+                                    _searchController.clear();
+                                    _searchQuery = '';
+                                  });
+                                },
+                              ),
+                            ),
+                            onChanged: (query) {
+                              setState(() {
+                                _searchQuery = query.trim();
+                              });
+                            },
+                            onSubmitted: (query) {
+                              setState(() {
+                                _showSearchBar = false;
+                                _searchQuery = query.trim();
+                              });
+                            },
+                          ),
+                        ),
+                      )
+                    : Padding(
+                        key: const ValueKey('searchIcon'),
+                        padding: const EdgeInsets.only(
+                          top: 8.0,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.search, size: 24),
+                          tooltip: 'Search',
+                          onPressed: () {
+                            setState(() {
+                              _showSearchBar = true;
+                            });
+                            // Request focus when opening
+                            Future.delayed(Duration(milliseconds: 10), () {
+                              _searchFocusNode.requestFocus();
+                            });
+                          },
+                        ),
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide.none,
-                      ),
-                      prefixIcon: Icon(
-                        Icons.search,
-                        size: 20,
-                        color: subtitleColor,
-                      ),
-                    ),
-                    onChanged: (query) {
-                      setState(() {
-                        _searchQuery = query.trim();
-                      });
-                    },
-                    onSubmitted: (query) {
-                      setState(() {
-                        _searchQuery = query.trim();
-                      });
-                    },
-                  ),
-                ),
               ),
             ],
           ),
@@ -511,7 +575,8 @@ class _BirdListScreenState extends State<BirdListScreen> {
                                           ),
                                           const SizedBox(height: 8),
                                           if (bird.imagePath != null &&
-                                              bird.imagePath!.isNotEmpty)
+                                              bird.imagePath!.isNotEmpty &&
+                                              File(bird.imagePath!).existsSync())
                                             Center(
                                               child: GestureDetector(
                                                 onTap: () => _showImagePopup(
@@ -684,7 +749,7 @@ class _BirdListScreenState extends State<BirdListScreen> {
                                             ),
                                             textAlign: TextAlign.left,
                                           ),
-                                          if (bird.additionalImages.isNotEmpty)
+                                          if (bird.additionalImages.any((img) => img.isNotEmpty && File(img).existsSync()))
                                             Padding(
                                               padding: const EdgeInsets.only(
                                                 top: 10.0,
@@ -693,6 +758,7 @@ class _BirdListScreenState extends State<BirdListScreen> {
                                                 spacing: 10,
                                                 runSpacing: 10,
                                                 children: bird.additionalImages
+                                                    .where((imgPath) => imgPath.isNotEmpty && File(imgPath).existsSync())
                                                     .map(
                                                       (
                                                         imgPath,
@@ -702,7 +768,7 @@ class _BirdListScreenState extends State<BirdListScreen> {
                                                               context,
                                                               imgPath,
                                                               allImages: bird
-                                                                  .additionalImages,
+                                                                  .additionalImages.where((img) => img.isNotEmpty && File(img).existsSync()).toList(),
                                                             ),
                                                         child: ClipRRect(
                                                           borderRadius:
@@ -731,22 +797,28 @@ class _BirdListScreenState extends State<BirdListScreen> {
                           },
                           child: ListTile(
                             leading:
-                                (bird.imagePath != null ||
-                                    bird.additionalImages.isNotEmpty)
-                                ? _TileImageCarousel(
-                                    profileImage: bird.imagePath,
-                                    additionalImages: bird.additionalImages,
-                                    onTap: (imgPath, allImages) =>
-                                        _showImagePopup(
-                                          context,
-                                          imgPath,
-                                          allImages: allImages,
-                                        ),
-                                  )
-                                : CircleAvatar(
-                                    child: Icon(Icons.pets, color: textColor),
+                                (bird.imagePath != null &&
+                                 bird.imagePath!.isNotEmpty &&
+                                 File(bird.imagePath!).existsSync())
+                                ? CircleAvatar(
+                                    backgroundImage: FileImage(File(bird.imagePath!)),
                                     radius: 28,
-                                  ),
+                                  )
+                                : (bird.additionalImages.any((img) => img.isNotEmpty && File(img).existsSync()))
+                                  ? _TileImageCarousel(
+                                      profileImage: bird.imagePath,
+                                      additionalImages: bird.additionalImages.where((img) => img.isNotEmpty && File(img).existsSync()).toList(),
+                                      onTap: (imgPath, allImages) =>
+                                          _showImagePopup(
+                                            context,
+                                            imgPath,
+                                            allImages: allImages,
+                                          ),
+                                    )
+                                  : CircleAvatar(
+                                      child: Icon(Icons.pets, color: textColor),
+                                      radius: 28,
+                                    ),
                             title: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -1033,9 +1105,11 @@ class _TileImageCarouselState extends State<_TileImageCarousel> {
   void initState() {
     super.initState();
     _allImages = [
-      if (widget.profileImage != null && widget.profileImage!.isNotEmpty)
+      if (widget.profileImage != null &&
+          widget.profileImage!.isNotEmpty &&
+          File(widget.profileImage!).existsSync())
         widget.profileImage!,
-      ...widget.additionalImages,
+      ...widget.additionalImages.where((img) => img.isNotEmpty && File(img).existsSync()),
     ];
   }
 
