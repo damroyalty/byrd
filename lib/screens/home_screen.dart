@@ -498,6 +498,98 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       )
                       .toList(),
                 ),
+                const SizedBox(height: 18),
+                GestureDetector(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (verCtx) {
+                        return Dialog(
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  "You are currently on version 1.5",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                RichText(
+                                  textAlign: TextAlign.center,
+                                  text: TextSpan(
+                                    style: const TextStyle(
+                                      color: Colors.black87,
+                                      fontSize: 15,
+                                    ),
+                                    children: [
+                                      const TextSpan(
+                                        text:
+                                            "Since this is an unofficial app, check ",
+                                      ),
+                                      WidgetSpan(
+                                        child: GestureDetector(
+                                          onTap: () async {
+                                            final url = Uri.parse(
+                                              "https://www.github.com/damroyalty/byrd/releases",
+                                            );
+                                            if (await canLaunchUrl(url)) {
+                                              await launchUrl(
+                                                url,
+                                                mode: LaunchMode
+                                                    .externalApplication,
+                                              );
+                                            }
+                                          },
+                                          child: Text(
+                                            "here",
+                                            style: TextStyle(
+                                              color: Colors.blue[700],
+                                              decoration:
+                                                  TextDecoration.underline,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const TextSpan(
+                                        text: " for any further updates.",
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                TextButton(
+                                  onPressed: () => Navigator.of(verCtx).pop(),
+                                  child: const Text("Close"),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      "v1.5 (tap for details)",
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
