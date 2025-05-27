@@ -23,10 +23,10 @@ class _BirdListScreenState extends State<BirdListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   bool _showSearchBar = false;
-  final FocusNode _searchFocusNode = FocusNode(); // <-- add this
+  final FocusNode _searchFocusNode = FocusNode();
   final Duration _searchAnimDuration = const Duration(
     milliseconds: 250,
-  ); // animation duration
+  );
 
   // color picker //
   Color customBrown = Colors.brown;
@@ -41,7 +41,6 @@ class _BirdListScreenState extends State<BirdListScreen> {
       final titleColorValue = prefs.getInt('list_customTitleColor');
       if (brownValue != null) customBrown = Color(brownValue);
       if (greenValue != null) customTileGreen = Color(greenValue);
-      // Reset to white if not set (after reset)
       if (titleColorValue != null) {
         _customTitleColor = Color(titleColorValue);
       } else {
@@ -225,7 +224,8 @@ class _BirdListScreenState extends State<BirdListScreen> {
                   ),
                   Positioned(
                     top: 30,
-                    right: 0, // <-- move from 10 to 0 for closer to the right edge
+                    right:
+                        0,
                     child: IconButton(
                       icon: const Icon(
                         Icons.close,
@@ -303,7 +303,7 @@ class _BirdListScreenState extends State<BirdListScreen> {
 
   @override
   void dispose() {
-    _searchFocusNode.dispose(); // <-- add this
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -402,7 +402,7 @@ class _BirdListScreenState extends State<BirdListScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 6.0),
                           child: TextField(
                             controller: _searchController,
-                            focusNode: _searchFocusNode, // <-- add this
+                            focusNode: _searchFocusNode,
                             autofocus: true,
                             style: TextStyle(fontSize: 14, color: textColor),
                             decoration: InputDecoration(
@@ -455,9 +455,7 @@ class _BirdListScreenState extends State<BirdListScreen> {
                       )
                     : Padding(
                         key: const ValueKey('searchIcon'),
-                        padding: const EdgeInsets.only(
-                          top: 8.0,
-                        ),
+                        padding: const EdgeInsets.only(top: 8.0),
                         child: IconButton(
                           icon: const Icon(Icons.search, size: 24),
                           tooltip: 'Search',
@@ -465,7 +463,6 @@ class _BirdListScreenState extends State<BirdListScreen> {
                             setState(() {
                               _showSearchBar = true;
                             });
-                            // Request focus when opening
                             Future.delayed(Duration(milliseconds: 10), () {
                               _searchFocusNode.requestFocus();
                             });
@@ -576,7 +573,9 @@ class _BirdListScreenState extends State<BirdListScreen> {
                                           const SizedBox(height: 8),
                                           if (bird.imagePath != null &&
                                               bird.imagePath!.isNotEmpty &&
-                                              File(bird.imagePath!).existsSync())
+                                              File(
+                                                bird.imagePath!,
+                                              ).existsSync())
                                             Center(
                                               child: GestureDetector(
                                                 onTap: () => _showImagePopup(
@@ -749,7 +748,11 @@ class _BirdListScreenState extends State<BirdListScreen> {
                                             ),
                                             textAlign: TextAlign.left,
                                           ),
-                                          if (bird.additionalImages.any((img) => img.isNotEmpty && File(img).existsSync()))
+                                          if (bird.additionalImages.any(
+                                            (img) =>
+                                                img.isNotEmpty &&
+                                                File(img).existsSync(),
+                                          ))
                                             Padding(
                                               padding: const EdgeInsets.only(
                                                 top: 10.0,
@@ -758,18 +761,31 @@ class _BirdListScreenState extends State<BirdListScreen> {
                                                 spacing: 10,
                                                 runSpacing: 10,
                                                 children: bird.additionalImages
-                                                    .where((imgPath) => imgPath.isNotEmpty && File(imgPath).existsSync())
+                                                    .where(
+                                                      (imgPath) =>
+                                                          imgPath.isNotEmpty &&
+                                                          File(
+                                                            imgPath,
+                                                          ).existsSync(),
+                                                    )
                                                     .map(
                                                       (
                                                         imgPath,
                                                       ) => GestureDetector(
-                                                        onTap: () =>
-                                                            _showImagePopup(
-                                                              context,
-                                                              imgPath,
-                                                              allImages: bird
-                                                                  .additionalImages.where((img) => img.isNotEmpty && File(img).existsSync()).toList(),
-                                                            ),
+                                                        onTap: () => _showImagePopup(
+                                                          context,
+                                                          imgPath,
+                                                          allImages: bird
+                                                              .additionalImages
+                                                              .where(
+                                                                (img) =>
+                                                                    img.isNotEmpty &&
+                                                                    File(
+                                                                      img,
+                                                                    ).existsSync(),
+                                                              )
+                                                              .toList(),
+                                                        ),
                                                         child: ClipRRect(
                                                           borderRadius:
                                                               BorderRadius.circular(
@@ -798,27 +814,39 @@ class _BirdListScreenState extends State<BirdListScreen> {
                           child: ListTile(
                             leading:
                                 (bird.imagePath != null &&
-                                 bird.imagePath!.isNotEmpty &&
-                                 File(bird.imagePath!).existsSync())
+                                    bird.imagePath!.isNotEmpty &&
+                                    File(bird.imagePath!).existsSync())
                                 ? CircleAvatar(
-                                    backgroundImage: FileImage(File(bird.imagePath!)),
+                                    backgroundImage: FileImage(
+                                      File(bird.imagePath!),
+                                    ),
                                     radius: 28,
                                   )
-                                : (bird.additionalImages.any((img) => img.isNotEmpty && File(img).existsSync()))
-                                  ? _TileImageCarousel(
-                                      profileImage: bird.imagePath,
-                                      additionalImages: bird.additionalImages.where((img) => img.isNotEmpty && File(img).existsSync()).toList(),
-                                      onTap: (imgPath, allImages) =>
-                                          _showImagePopup(
-                                            context,
-                                            imgPath,
-                                            allImages: allImages,
-                                          ),
-                                    )
-                                  : CircleAvatar(
-                                      child: Icon(Icons.pets, color: textColor),
-                                      radius: 28,
-                                    ),
+                                : (bird.additionalImages.any(
+                                    (img) =>
+                                        img.isNotEmpty &&
+                                        File(img).existsSync(),
+                                  ))
+                                ? _TileImageCarousel(
+                                    profileImage: bird.imagePath,
+                                    additionalImages: bird.additionalImages
+                                        .where(
+                                          (img) =>
+                                              img.isNotEmpty &&
+                                              File(img).existsSync(),
+                                        )
+                                        .toList(),
+                                    onTap: (imgPath, allImages) =>
+                                        _showImagePopup(
+                                          context,
+                                          imgPath,
+                                          allImages: allImages,
+                                        ),
+                                  )
+                                : CircleAvatar(
+                                    child: Icon(Icons.pets, color: textColor),
+                                    radius: 28,
+                                  ),
                             title: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -1109,7 +1137,9 @@ class _TileImageCarouselState extends State<_TileImageCarousel> {
           widget.profileImage!.isNotEmpty &&
           File(widget.profileImage!).existsSync())
         widget.profileImage!,
-      ...widget.additionalImages.where((img) => img.isNotEmpty && File(img).existsSync()),
+      ...widget.additionalImages.where(
+        (img) => img.isNotEmpty && File(img).existsSync(),
+      ),
     ];
   }
 

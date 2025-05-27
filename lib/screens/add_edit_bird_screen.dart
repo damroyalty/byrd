@@ -741,7 +741,6 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // Main label/name field
                   TextFormField(
                     initialValue: _label,
                     decoration: InputDecoration(

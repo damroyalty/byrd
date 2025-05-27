@@ -25,10 +25,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
 
   bool _showSearchBar = false;
-  final FocusNode _searchFocusNode = FocusNode(); // <-- add this
-  final Duration _searchAnimDuration = const Duration(
-    milliseconds: 250,
-  ); // animation duration
+  final FocusNode _searchFocusNode = FocusNode();
+  final Duration _searchAnimDuration = const Duration(milliseconds: 250);
 
   void _showSearchResults(BuildContext context, String query) {
     final birdsProvider = Provider.of<BirdsProvider>(context, listen: false);
@@ -116,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     _glitterController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 7), // slow down the effect further
+      duration: const Duration(seconds: 7),
     );
     _glitterController.repeat();
 
@@ -139,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _marqueeController.removeListener(_marqueeTick);
     _marqueeController.dispose();
     _glitterController.dispose();
-    _searchFocusNode.dispose(); // <-- add this
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -374,7 +372,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     await prefs.remove('list_customTileGreen');
     await prefs.remove('home_customTitleColor');
     await prefs.setBool('home_useAnimatedTitle', true);
-    // Reset edit and bird list screen title colors to white
     await prefs.remove('edit_customTitleColor');
     await prefs.remove('list_customTitleColor');
     setState(() {
@@ -485,10 +482,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ? AnimatedBuilder(
                           animation: _glitterController,
                           builder: (context, child) {
-                            // Smoother, more seamless glitter: use a cyclic offset and wrap-around
                             final double offset = _glitterController.value;
-                            // Use a larger slide range and tileMode.repeated for seamlessness
-                            final double slide = offset * 4.0; // 0.0 to 4.0
+                            final double slide = offset * 4.0;
                             return ShaderMask(
                               shaderCallback: (Rect bounds) {
                                 return LinearGradient(
@@ -609,7 +604,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           padding: const EdgeInsets.symmetric(vertical: 6.0),
                           child: TextField(
                             controller: _searchController,
-                            focusNode: _searchFocusNode, // <-- add this
+                            focusNode: _searchFocusNode,
                             autofocus: true,
                             style: TextStyle(
                               fontSize: 14,
@@ -661,9 +656,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       )
                     : Padding(
                         key: const ValueKey('searchIcon'),
-                        padding: const EdgeInsets.only(
-                          top: 8.0,
-                        ),
+                        padding: const EdgeInsets.only(top: 8.0),
                         child: IconButton(
                           icon: const Icon(Icons.search, size: 26),
                           tooltip: 'Search',
@@ -671,7 +664,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             setState(() {
                               _showSearchBar = true;
                             });
-                            // Request focus when opening
                             Future.delayed(Duration(milliseconds: 10), () {
                               _searchFocusNode.requestFocus();
                             });
@@ -988,7 +980,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                                 context:
                                                                     context,
                                                                 builder: (infoCtx) {
-                                                                  // Info popup logic from bird_list_screen.dart
                                                                   final bird =
                                                                       matchingBird!;
                                                                   TextStyle
