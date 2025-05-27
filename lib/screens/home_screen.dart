@@ -481,10 +481,42 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ),
                             onTap: () async {
                               final url = Uri.parse(link['url'] as String);
-                              if (await canLaunchUrl(url)) {
-                                await launchUrl(
-                                  url,
-                                  mode: LaunchMode.externalApplication,
+                              try {
+                                bool launched = false;
+
+                                if (await canLaunchUrl(url)) {
+                                  launched = await launchUrl(
+                                    url,
+                                    mode: LaunchMode.externalApplication,
+                                  );
+                                }
+
+                                if (!launched && await canLaunchUrl(url)) {
+                                  launched = await launchUrl(
+                                    url,
+                                    mode: LaunchMode.platformDefault,
+                                  );
+                                }
+
+                                if (!launched && await canLaunchUrl(url)) {
+                                  launched = await launchUrl(
+                                    url,
+                                    mode: LaunchMode.inAppWebView,
+                                  );
+                                }
+
+                                if (!launched) {
+                                  throw 'Could not launch ${url.toString()}';
+                                }
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Cannot open ${link['label']}: $e',
+                                    ),
+                                    backgroundColor: Colors.red,
+                                    duration: const Duration(seconds: 3),
+                                  ),
                                 );
                               }
                             },
@@ -538,13 +570,49 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         child: GestureDetector(
                                           onTap: () async {
                                             final url = Uri.parse(
-                                              "https://www.github.com/damroyalty/byrd/releases",
+                                              "https://github.com/damroyalty/byrd/releases",
                                             );
-                                            if (await canLaunchUrl(url)) {
-                                              await launchUrl(
-                                                url,
-                                                mode: LaunchMode
-                                                    .externalApplication,
+                                            try {
+                                              bool launched = false;
+
+                                              if (await canLaunchUrl(url)) {
+                                                launched = await launchUrl(
+                                                  url,
+                                                  mode: LaunchMode
+                                                      .externalApplication,
+                                                );
+                                              }
+
+                                              if (!launched &&
+                                                  await canLaunchUrl(url)) {
+                                                launched = await launchUrl(
+                                                  url,
+                                                  mode: LaunchMode
+                                                      .platformDefault,
+                                                );
+                                              }
+
+                                              if (!launched &&
+                                                  await canLaunchUrl(url)) {
+                                                launched = await launchUrl(
+                                                  url,
+                                                  mode: LaunchMode.inAppWebView,
+                                                );
+                                              }
+
+                                              if (!launched) {
+                                                throw 'Could not launch GitHub releases';
+                                              }
+                                            } catch (e) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    'Cannot open link: $e',
+                                                  ),
+                                                  backgroundColor: Colors.red,
+                                                ),
                                               );
                                             }
                                           },
@@ -815,7 +883,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: _showSearchBar
                     ? SizedBox(
                         key: const ValueKey('searchBar'),
-                        width: 220,
+                        width: 150,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 6.0),
                           child: TextField(
@@ -823,13 +891,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             focusNode: _searchFocusNode,
                             autofocus: true,
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 10,
                               color: isDark ? Colors.white : Colors.black,
                             ),
                             decoration: InputDecoration(
                               hintText: 'breed/location',
                               hintStyle: TextStyle(
-                                fontSize: 13,
+                                fontSize: 10,
                                 color: isDark ? Colors.white70 : Colors.black87,
                               ),
                               fillColor: isDark
@@ -1113,21 +1181,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                       ),
                                                     ),
                                                     const Spacer(),
-                                                    TapParticle(
-                                                      color: customTileGreen,
-                                                      onTap: null,
-                                                      child: IconButton(
-                                                        icon: const Icon(
-                                                          Icons.close_rounded,
-                                                          color: Colors.black,
-                                                          size: 22,
-                                                        ),
-                                                        splashRadius: 18,
-                                                        onPressed: () =>
-                                                            Navigator.of(
-                                                              ctx,
-                                                            ).pop(),
+                                                    IconButton(
+                                                      icon: const Icon(
+                                                        Icons.close_rounded,
+                                                        color: Colors.black,
+                                                        size: 22,
                                                       ),
+                                                      splashRadius: 18,
+                                                      onPressed: () =>
+                                                          Navigator.of(
+                                                            ctx,
+                                                          ).pop(),
                                                     ),
                                                   ],
                                                 ),
@@ -1137,389 +1201,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                   color: Colors.green
                                                       .withOpacity(0.12),
                                                 ),
-                                                ...birdsWithReplacement.asMap().entries.map((
-                                                  entry,
-                                                ) {
-                                                  final idx = entry.key;
-                                                  final birdEntry = entry.value;
-                                                  final displayText =
-                                                      birdEntry['displayText']
-                                                          as String;
-                                                  final replacementDateObj =
-                                                      birdEntry['replacementDate']
-                                                          as DateTime?;
-                                                  final daysDiff =
-                                                      birdEntry['daysDiff']
-                                                          as int;
-                                                  Color textColor =
-                                                      daysDiff <= 90
-                                                      ? Colors.red
-                                                      : Colors.green[900]!;
-                                                  final birdsProvider =
-                                                      Provider.of<
-                                                        BirdsProvider
-                                                      >(ctx, listen: false);
-                                                  final allBirds =
-                                                      birdsProvider.birds;
-                                                  Bird? matchingBird;
-                                                  try {
-                                                    matchingBird = allBirds.firstWhere(
-                                                      (b) =>
-                                                          extractReplacementDate(
-                                                                b.notes,
-                                                              ) ==
-                                                              replacementDateObj &&
-                                                          displayText.contains(
-                                                            b.breed,
-                                                          ) &&
-                                                          displayText.contains(
-                                                            b.location,
-                                                          ),
-                                                    );
-                                                  } catch (_) {
-                                                    matchingBird = null;
-                                                  }
-                                                  return Padding(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          vertical: 2.0,
-                                                        ),
-                                                    child: TapParticle(
-                                                      color: customTileGreen,
-                                                      onTap:
-                                                          matchingBird != null
-                                                          ? () {
-                                                              Navigator.of(
-                                                                ctx,
-                                                              ).pop();
-                                                              showDialog(
-                                                                context:
-                                                                    context,
-                                                                builder: (infoCtx) {
-                                                                  final bird =
-                                                                      matchingBird!;
-                                                                  TextStyle
-                                                                  labelStyle = const TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .bold,
-                                                                    fontSize:
-                                                                        16,
-                                                                    fontFamily:
-                                                                        'Segoe UI',
-                                                                  );
-                                                                  TextStyle
-                                                                  valueStyle = const TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w400,
-                                                                    fontSize:
-                                                                        16,
-                                                                    fontFamily:
-                                                                        'Segoe UI',
-                                                                  );
-                                                                  void
-                                                                  showImagePopup(
-                                                                    String
-                                                                    imgPath, {
-                                                                    List<
-                                                                      String
-                                                                    >?
-                                                                    allImages,
-                                                                  }) {
-                                                                    int
-                                                                    initialIndex =
-                                                                        0;
-                                                                    List<String>
-                                                                    images =
-                                                                        allImages ??
-                                                                        [imgPath];
-                                                                    if (allImages !=
-                                                                        null) {
-                                                                      initialIndex =
-                                                                          images.indexOf(
-                                                                            imgPath,
-                                                                          );
-                                                                    }
-                                                                    showDialog(
-                                                                      context:
-                                                                          infoCtx,
-                                                                      builder: (imgCtx) {
-                                                                        return Dialog(
-                                                                          backgroundColor:
-                                                                              Colors.transparent,
-                                                                          child: Stack(
-                                                                            alignment:
-                                                                                Alignment.center,
-                                                                            children: [
-                                                                              InteractiveViewer(
-                                                                                child: Image.file(
-                                                                                  File(
-                                                                                    images[initialIndex],
-                                                                                  ),
-                                                                                  fit: BoxFit.contain,
-                                                                                ),
-                                                                              ),
-                                                                              Positioned(
-                                                                                top: 50,
-                                                                                right: 10,
-                                                                                child: IconButton(
-                                                                                  icon: const Icon(
-                                                                                    Icons.close,
-                                                                                    color: Colors.white,
-                                                                                    size: 28,
-                                                                                  ),
-                                                                                  onPressed: () => Navigator.of(
-                                                                                    imgCtx,
-                                                                                  ).pop(),
-                                                                                ),
-                                                                              ),
-                                                                            ],
-                                                                          ),
-                                                                        );
-                                                                      },
-                                                                    );
-                                                                  }
-
-                                                                  return Dialog(
-                                                                    backgroundColor: Colors
-                                                                        .white
-                                                                        .withOpacity(
-                                                                          0.95,
-                                                                        ),
-                                                                    shape: RoundedRectangleBorder(
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                            18,
-                                                                          ),
-                                                                    ),
-                                                                    child: Padding(
-                                                                      padding:
-                                                                          const EdgeInsets.all(
-                                                                            20,
-                                                                          ),
-                                                                      child: SingleChildScrollView(
-                                                                        child: Column(
-                                                                          mainAxisSize:
-                                                                              MainAxisSize.min,
-                                                                          crossAxisAlignment:
-                                                                              CrossAxisAlignment.start,
-                                                                          children: [
-                                                                            Row(
-                                                                              children: [
-                                                                                Text(
-                                                                                  bird.typeName,
-                                                                                  style: labelStyle.copyWith(
-                                                                                    fontSize: 20,
-                                                                                    color: customTileGreen,
-                                                                                  ),
-                                                                                ),
-                                                                                const Spacer(),
-                                                                                IconButton(
-                                                                                  icon: Icon(
-                                                                                    Icons.edit,
-                                                                                    color: customTileGreen,
-                                                                                    size: 22,
-                                                                                  ),
-                                                                                  tooltip: 'Edit',
-                                                                                  onPressed: () {
-                                                                                    Navigator.of(
-                                                                                      infoCtx,
-                                                                                    ).pop();
-                                                                                    Navigator.push(
-                                                                                      context,
-                                                                                      MaterialPageRoute(
-                                                                                        builder:
-                                                                                            (
-                                                                                              context,
-                                                                                            ) => AddEditBirdScreen(
-                                                                                              birdToEdit: bird,
-                                                                                            ),
-                                                                                      ),
-                                                                                    );
-                                                                                  },
-                                                                                ),
-                                                                                IconButton(
-                                                                                  icon: Icon(
-                                                                                    Icons.close,
-                                                                                    color: Colors.grey[700],
-                                                                                    size: 20,
-                                                                                  ),
-                                                                                  tooltip: 'Close',
-                                                                                  onPressed: () => Navigator.of(
-                                                                                    infoCtx,
-                                                                                  ).pop(),
-                                                                                ),
-                                                                              ],
-                                                                            ),
-                                                                            const SizedBox(
-                                                                              height: 8,
-                                                                            ),
-                                                                            if (bird.imagePath !=
-                                                                                    null &&
-                                                                                bird.imagePath!.isNotEmpty)
-                                                                              Center(
-                                                                                child: GestureDetector(
-                                                                                  onTap: () => showImagePopup(
-                                                                                    bird.imagePath!,
-                                                                                  ),
-                                                                                  child: ClipRRect(
-                                                                                    borderRadius: BorderRadius.circular(
-                                                                                      12,
-                                                                                    ),
-                                                                                    child: Image.file(
-                                                                                      File(
-                                                                                        bird.imagePath!,
-                                                                                      ),
-                                                                                      width: 120,
-                                                                                      height: 120,
-                                                                                      fit: BoxFit.cover,
-                                                                                    ),
-                                                                                  ),
-                                                                                ),
-                                                                              ),
-                                                                            const SizedBox(
-                                                                              height: 10,
-                                                                            ),
-                                                                            SelectableText.rich(
-                                                                              TextSpan(
-                                                                                style: valueStyle,
-                                                                                children: [
-                                                                                  TextSpan(
-                                                                                    text: 'Breed: ',
-                                                                                    style: labelStyle,
-                                                                                  ),
-                                                                                  TextSpan(
-                                                                                    text:
-                                                                                        bird.breed +
-                                                                                        '\n',
-                                                                                  ),
-                                                                                  TextSpan(
-                                                                                    text: 'Quantity: ',
-                                                                                    style: labelStyle,
-                                                                                  ),
-                                                                                  TextSpan(
-                                                                                    text: '${bird.quantity}\n',
-                                                                                  ),
-                                                                                  TextSpan(
-                                                                                    text: 'Location: ',
-                                                                                    style: labelStyle,
-                                                                                  ),
-                                                                                  TextSpan(
-                                                                                    text:
-                                                                                        bird.location +
-                                                                                        '\n',
-                                                                                  ),
-                                                                                  if (bird.notes.isNotEmpty) ...[
-                                                                                    TextSpan(
-                                                                                      text: 'Notes: ',
-                                                                                      style: labelStyle,
-                                                                                    ),
-                                                                                    TextSpan(
-                                                                                      text: bird.notes,
-                                                                                    ),
-                                                                                  ],
-                                                                                ],
-                                                                              ),
-                                                                              textAlign: TextAlign.left,
-                                                                            ),
-                                                                            if (bird.additionalImages.isNotEmpty)
-                                                                              Padding(
-                                                                                padding: const EdgeInsets.only(
-                                                                                  top: 10.0,
-                                                                                ),
-                                                                                child: Wrap(
-                                                                                  spacing: 10,
-                                                                                  runSpacing: 10,
-                                                                                  children: bird.additionalImages
-                                                                                      .map(
-                                                                                        (
-                                                                                          imgPath,
-                                                                                        ) => GestureDetector(
-                                                                                          onTap: () => showImagePopup(
-                                                                                            imgPath,
-                                                                                            allImages: bird.additionalImages,
-                                                                                          ),
-                                                                                          child: ClipRRect(
-                                                                                            borderRadius: BorderRadius.circular(
-                                                                                              8,
-                                                                                            ),
-                                                                                            child: Image.file(
-                                                                                              File(
-                                                                                                imgPath,
-                                                                                              ),
-                                                                                              width: 72,
-                                                                                              height: 72,
-                                                                                              fit: BoxFit.cover,
-                                                                                            ),
-                                                                                          ),
-                                                                                        ),
-                                                                                      )
-                                                                                      .toList(),
-                                                                                ),
-                                                                              ),
-                                                                          ],
-                                                                        ),
-                                                                      ),
-                                                                    ),
-                                                                  );
-                                                                },
-                                                              );
-                                                            }
-                                                          : null,
-                                                      child: Opacity(
-                                                        opacity: 0.88,
-                                                        child: Row(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            Padding(
-                                                              padding:
-                                                                  const EdgeInsets.only(
-                                                                    right: 8.0,
-                                                                    top: 2.0,
-                                                                  ),
-                                                              child: Icon(
-                                                                Icons.egg,
-                                                                size: 16,
-                                                                color: Colors
-                                                                    .yellow[800],
-                                                              ),
-                                                            ),
-                                                            Expanded(
-                                                              child: Text(
-                                                                displayText,
-                                                                style: TextStyle(
-                                                                  fontSize: 15,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
-                                                                  color:
-                                                                      textColor,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  );
-                                                }),
-                                                if (birdsWithReplacement
-                                                    .isEmpty)
-                                                  const Padding(
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                          vertical: 12.0,
-                                                        ),
-                                                    child: Text(
-                                                      'No upcoming replacements.',
-                                                      style: TextStyle(
-                                                        color: Colors.grey,
-                                                      ),
-                                                    ),
-                                                  ),
+                                                const Text(
+                                                  'Replacement tracking content here',
+                                                ),
                                               ],
                                             ),
                                           ),

@@ -24,9 +24,7 @@ class _BirdListScreenState extends State<BirdListScreen> {
   String _searchQuery = '';
   bool _showSearchBar = false;
   final FocusNode _searchFocusNode = FocusNode();
-  final Duration _searchAnimDuration = const Duration(
-    milliseconds: 250,
-  );
+  final Duration _searchAnimDuration = const Duration(milliseconds: 250);
 
   // color picker //
   Color customBrown = Colors.brown;
@@ -224,8 +222,7 @@ class _BirdListScreenState extends State<BirdListScreen> {
                   ),
                   Positioned(
                     top: 30,
-                    right:
-                        0,
+                    right: 0,
                     child: IconButton(
                       icon: const Icon(
                         Icons.close,
@@ -397,18 +394,18 @@ class _BirdListScreenState extends State<BirdListScreen> {
                 child: _showSearchBar
                     ? SizedBox(
                         key: const ValueKey('searchBar'),
-                        width: 200,
+                        width: 150,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 6.0),
                           child: TextField(
                             controller: _searchController,
                             focusNode: _searchFocusNode,
                             autofocus: true,
-                            style: TextStyle(fontSize: 14, color: textColor),
+                            style: TextStyle(fontSize: 10, color: textColor),
                             decoration: InputDecoration(
                               hintText: 'breed/location',
                               hintStyle: TextStyle(
-                                fontSize: 13,
+                                fontSize: 10,
                                 color: subtitleColor,
                               ),
                               fillColor: isDark
