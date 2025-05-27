@@ -12,6 +12,7 @@ import 'dart:ui';
 import 'add_edit_bird_screen.dart';
 import '../dark_mode.dart';
 import '../utils.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -380,6 +381,104 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _useAnimatedTitle = true;
       _customTitleColor = null;
     });
+  }
+
+  void _showSupportPopup() {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final links = [
+          {
+            'label': 'PayPal',
+            'url': 'https://paypal.me/damroyaltyxxii',
+            'icon': Icons.attach_money,
+          },
+          {
+            'label': 'Instagram',
+            'url': 'https://www.instagram.com/damroyalty',
+            'icon': Icons.camera_alt,
+          },
+          {
+            'label': 'X/Twitter',
+            'url': 'https://www.x.com/damroyalty',
+            'icon': Icons.alternate_email,
+          },
+          {
+            'label': 'GitHub',
+            'url': 'https://www.github.com/damroyalty',
+            'icon': Icons.code,
+          },
+          {
+            'label': 'Linktree',
+            'url': 'https://linktr.ee/damroyalty',
+            'icon': Icons.link,
+          },
+          {
+            'label': 'Twitch',
+            'url': 'https://www.twitch.tv/devroyalty',
+            'icon': Icons.videogame_asset,
+          },
+          {
+            'label': 'Discord',
+            'url': 'https://discord.gg/kDs2mmQwwS',
+            'icon': Icons.forum,
+          },
+        ];
+        return Dialog(
+          backgroundColor: Colors.white.withOpacity(0.97),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.favorite, color: Colors.pink[400], size: 28),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Support the dev',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: customTileGreen,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Colors.black, size: 22),
+                      splashRadius: 18,
+                      onPressed: () => Navigator.of(ctx).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Divider(height: 18, thickness: 1, color: Colors.green.withOpacity(0.12)),
+                Column(
+                  children: links.map((link) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: ListTile(
+                      leading: Icon(link['icon'] as IconData, color: customTileGreen),
+                      title: Text(link['label'] as String, style: TextStyle(fontWeight: FontWeight.w500)),
+                      onTap: () async {
+                        final url = Uri.parse(link['url'] as String);
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(url, mode: LaunchMode.externalApplication);
+                        }
+                      },
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      tileColor: Colors.green[50],
+                      hoverColor: Colors.green[100],
+                    ),
+                  )).toList(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -1427,6 +1526,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       child: Icon(Icons.refresh, color: Colors.brown, size: 16),
                       mini: true,
                       tooltip: 'Reset theme colors to default',
+                    ),
+                  ),
+                ),
+                // support button (money icon) //
+                Positioned(
+                  bottom: 4,
+                  left: 8,
+                  child: SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: FloatingActionButton(
+                      heroTag: 'supportDev',
+                      backgroundColor: Colors.white,
+                      elevation: 2,
+                      onPressed: _showSupportPopup,
+                      child: Icon(Icons.attach_money, color: Colors.green[800], size: 18),
+                      mini: true,
+                      tooltip: 'Support the dev',
                     ),
                   ),
                 ),
