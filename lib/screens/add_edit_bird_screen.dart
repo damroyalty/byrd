@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart' show TextDirection;
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/bird.dart';
@@ -10,6 +10,8 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../tap_particle.dart';
 import '../dark_mode.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 
 class AddEditBirdScreen extends StatefulWidget {
   final BirdType? birdType;
@@ -38,15 +40,12 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
   bool? _isAlive;
   String? _healthStatus;
   late Gender _gender;
-  late BandColor _bandColor;
   late String _location;
   String _notes = '';
   String? _label;
 
   // search //
-  String _searchQuery = '';
   List<String> _filteredBreeds = [];
-  List<String> _locationSuggestions = [];
 
   // breed dropdown options //
   final Map<BirdType, List<String>> _breedOptions = {
@@ -196,25 +195,25 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
       final brownValue = prefs.getInt('edit_customBrown');
       final greenValue = prefs.getInt('edit_customTileGreen');
       final titleColorValue = prefs.getInt('edit_customTitleColor');
-      if (brownValue != null) customBrown = Color(brownValue);
-      if (greenValue != null) customTileGreen = Color(greenValue);
-      if (titleColorValue != null) _customTitleColor = Color(titleColorValue);
+      if (brownValue != null) customBrown = Color(brownValue.toUnsigned(32));
+      if (greenValue != null) customTileGreen = Color(greenValue.toUnsigned(32));
+      if (titleColorValue != null) _customTitleColor = Color(titleColorValue.toUnsigned(32));
     });
   }
 
   Future<void> _saveBrownColor(Color color) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('edit_customBrown', color.value);
+    await prefs.setInt('edit_customBrown', color.value.toUnsigned(32));
   }
 
   Future<void> _saveTileGreenColor(Color color) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('edit_customTileGreen', color.value);
+    await prefs.setInt('edit_customTileGreen', color.value.toUnsigned(32));
   }
 
   Future<void> _saveTitleColor(Color color) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('edit_customTitleColor', color.value);
+    await prefs.setInt('edit_customTitleColor', color.value.toUnsigned(32));
   }
 
   void _showColorPickerDialogForBrown() async {
@@ -338,14 +337,14 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
   }
 
   // custom radio color //
-  MaterialStateProperty<Color?> _radioFillColor(
+  WidgetStateProperty<Color?> _radioFillColor(
     Color color, {
     bool isDark = false,
   }) {
-    return MaterialStateProperty.resolveWith<Color?>((
-      Set<MaterialState> states,
+    return WidgetStateProperty.resolveWith<Color?>((
+      Set<WidgetState> states,
     ) {
-      if (states.contains(MaterialState.selected)) {
+      if (states.contains(WidgetState.selected)) {
         return color;
       }
       if (isDark) {
@@ -371,7 +370,6 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
       _isAlive = widget.birdToEdit!.isAlive;
       _healthStatus = widget.birdToEdit!.healthStatus;
       _gender = widget.birdToEdit!.gender;
-      _bandColor = widget.birdToEdit!.bandColor;
       _location = widget.birdToEdit!.location;
       _notes = widget.birdToEdit!.notes;
       _label = widget.birdToEdit!.label;
@@ -393,12 +391,10 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
       _source = SourceType.egg;
       _date = DateTime.now();
       _gender = Gender.unknown;
-      _bandColor = BandColor.none;
       _location = '';
     }
 
     _filteredBreeds = _breedOptions[_birdType]!;
-    _locationSuggestions = [];
     // RESTORES //
     if (widget.birdToEdit != null &&
         widget.birdToEdit!.source == SourceType.store &&
@@ -477,30 +473,90 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
     }
   }
 
-  void _updateSearch(String query) {
-    setState(() {
-      _searchQuery = query;
-      final allBreeds = _breedOptions.values
-          .expand((list) => list)
-          .toSet()
-          .toList();
-      _filteredBreeds = allBreeds
-          .where((breed) => breed.toLowerCase().contains(query.toLowerCase()))
-          .toList();
-      if (_filteredBreeds.isEmpty) {
-        _filteredBreeds = _breedOptions[_birdType]!;
-      }
-      _locationSuggestions = query.isNotEmpty ? [query] : [];
-    });
+  Future<void> _showImageSourceActionSheet({required Function(File) onImagePicked}) async {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Choose from Gallery'),
+              onTap: () async {
+                Navigator.of(context).pop();
+                final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+                if (!mounted) return;
+                if (pickedFile != null) {
+                  final cropped = await _cropImage(File(pickedFile.path));
+                  if (!mounted) return;
+                  if (cropped != null) onImagePicked(cropped);
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Take a Photo'),
+              onTap: () async {
+                Navigator.of(context).pop();
+                final pickedFile = await _picker.pickImage(source: ImageSource.camera);
+                if (!mounted) return;
+                if (pickedFile != null) {
+                  final cropped = await _cropImage(File(pickedFile.path));
+                  if (!mounted) return;
+                  if (cropped != null) onImagePicked(cropped);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<File?> _cropImage(File imageFile) async {
+    // Skip cropping on Windows (image_cropper not supported)
+    if (Platform.isWindows) {
+      return imageFile;
+    }
+    
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: imageFile.path,
+      compressFormat: ImageCompressFormat.jpg,
+      compressQuality: 90,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Crop Image',
+          toolbarColor: Colors.brown,
+          toolbarWidgetColor: Colors.white,
+          initAspectRatio: CropAspectRatioPreset.original,
+          lockAspectRatio: false,
+        ),
+        IOSUiSettings(
+          title: 'Crop Image',
+        ),
+      ],
+    );
+    
+    if (croppedFile != null) {
+      return File(croppedFile.path);
+    }
+    return null;
+  }
+
+  Future<File> _persistImage(File imageFile) async {
+    final appDir = await getApplicationDocumentsDirectory();
+    final fileName = 'bird_${DateTime.now().millisecondsSinceEpoch}${path.extension(imageFile.path)}';
+    final savedImage = await imageFile.copy(path.join(appDir.path, fileName));
+    return savedImage;
   }
 
   Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
+    await _showImageSourceActionSheet(onImagePicked: (cropped) async {
+      final saved = await _persistImage(cropped);
       setState(() {
-        _imageFile = File(pickedFile.path);
+        _imageFile = saved;
       });
-    }
+    });
   }
 
   Future<void> _pickAdditionalImage() async {
@@ -510,33 +566,15 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
       );
       return;
     }
-
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
+    await _showImageSourceActionSheet(onImagePicked: (cropped) async {
+      final saved = await _persistImage(cropped);
       setState(() {
-        _additionalImages.add(File(pickedFile.path));
+        _additionalImages.add(saved);
       });
-    }
+    });
   }
 
-  Future<void> _selectDate(BuildContext context, bool isArrivalDate) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: isArrivalDate ? _arrivalDate ?? DateTime.now() : _date,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) {
-      setState(() {
-        if (isArrivalDate) {
-          _arrivalDate = picked;
-        } else {
-          _date = picked;
-        }
-      });
-    }
-  }
-
+  // Restore _saveForm method
   void _saveForm() {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -648,6 +686,25 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
     }
 
     Navigator.of(context).pop();
+  }
+
+  // Restore _selectDate method
+  Future<void> _selectDate(BuildContext context, bool isArrivalDate) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: isArrivalDate ? _arrivalDate ?? DateTime.now() : _date,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(() {
+        if (isArrivalDate) {
+          _arrivalDate = picked;
+        } else {
+          _date = picked;
+        }
+      });
+    }
   }
 
   @override
@@ -1557,7 +1614,7 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                       setState(() {
                         _bandColorOrNull = value;
                         if (value != null) {
-                          _bandColor = value;
+                          // Remove: _bandColor = value;
                           _customBandColor = null;
                         } else {
                           _customBandColor = '';
