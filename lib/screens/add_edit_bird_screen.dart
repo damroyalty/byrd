@@ -196,8 +196,10 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
       final greenValue = prefs.getInt('edit_customTileGreen');
       final titleColorValue = prefs.getInt('edit_customTitleColor');
       if (brownValue != null) customBrown = Color(brownValue.toUnsigned(32));
-      if (greenValue != null) customTileGreen = Color(greenValue.toUnsigned(32));
-      if (titleColorValue != null) _customTitleColor = Color(titleColorValue.toUnsigned(32));
+      if (greenValue != null)
+        customTileGreen = Color(greenValue.toUnsigned(32));
+      if (titleColorValue != null)
+        _customTitleColor = Color(titleColorValue.toUnsigned(32));
     });
   }
 
@@ -341,9 +343,7 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
     Color color, {
     bool isDark = false,
   }) {
-    return WidgetStateProperty.resolveWith<Color?>((
-      Set<WidgetState> states,
-    ) {
+    return WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
       if (states.contains(WidgetState.selected)) {
         return color;
       }
@@ -473,7 +473,9 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
     }
   }
 
-  Future<void> _showImageSourceActionSheet({required Function(File) onImagePicked}) async {
+  Future<void> _showImageSourceActionSheet({
+    required Function(File) onImagePicked,
+  }) async {
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
@@ -484,7 +486,9 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
               title: const Text('Choose from Gallery'),
               onTap: () async {
                 Navigator.of(context).pop();
-                final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+                final pickedFile = await _picker.pickImage(
+                  source: ImageSource.gallery,
+                );
                 if (!mounted) return;
                 if (pickedFile != null) {
                   final cropped = await _cropImage(File(pickedFile.path));
@@ -498,7 +502,9 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
               title: const Text('Take a Photo'),
               onTap: () async {
                 Navigator.of(context).pop();
-                final pickedFile = await _picker.pickImage(source: ImageSource.camera);
+                final pickedFile = await _picker.pickImage(
+                  source: ImageSource.camera,
+                );
                 if (!mounted) return;
                 if (pickedFile != null) {
                   final cropped = await _cropImage(File(pickedFile.path));
@@ -514,11 +520,10 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
   }
 
   Future<File?> _cropImage(File imageFile) async {
-    // Skip cropping on Windows (image_cropper not supported)
     if (Platform.isWindows) {
       return imageFile;
     }
-    
+
     final croppedFile = await ImageCropper().cropImage(
       sourcePath: imageFile.path,
       compressFormat: ImageCompressFormat.jpg,
@@ -531,12 +536,10 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
           initAspectRatio: CropAspectRatioPreset.original,
           lockAspectRatio: false,
         ),
-        IOSUiSettings(
-          title: 'Crop Image',
-        ),
+        IOSUiSettings(title: 'Crop Image'),
       ],
     );
-    
+
     if (croppedFile != null) {
       return File(croppedFile.path);
     }
@@ -545,18 +548,21 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
 
   Future<File> _persistImage(File imageFile) async {
     final appDir = await getApplicationDocumentsDirectory();
-    final fileName = 'bird_${DateTime.now().millisecondsSinceEpoch}${path.extension(imageFile.path)}';
+    final fileName =
+        'bird_${DateTime.now().millisecondsSinceEpoch}${path.extension(imageFile.path)}';
     final savedImage = await imageFile.copy(path.join(appDir.path, fileName));
     return savedImage;
   }
 
   Future<void> _pickImage() async {
-    await _showImageSourceActionSheet(onImagePicked: (cropped) async {
-      final saved = await _persistImage(cropped);
-      setState(() {
-        _imageFile = saved;
-      });
-    });
+    await _showImageSourceActionSheet(
+      onImagePicked: (cropped) async {
+        final saved = await _persistImage(cropped);
+        setState(() {
+          _imageFile = saved;
+        });
+      },
+    );
   }
 
   Future<void> _pickAdditionalImage() async {
@@ -566,15 +572,16 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
       );
       return;
     }
-    await _showImageSourceActionSheet(onImagePicked: (cropped) async {
-      final saved = await _persistImage(cropped);
-      setState(() {
-        _additionalImages.add(saved);
-      });
-    });
+    await _showImageSourceActionSheet(
+      onImagePicked: (cropped) async {
+        final saved = await _persistImage(cropped);
+        setState(() {
+          _additionalImages.add(saved);
+        });
+      },
+    );
   }
 
-  // Restore _saveForm method
   void _saveForm() {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -688,7 +695,6 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
     Navigator.of(context).pop();
   }
 
-  // Restore _selectDate method
   Future<void> _selectDate(BuildContext context, bool isArrivalDate) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -1292,32 +1298,31 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                           ],
                         ),
                         const SizedBox(height: 14),
-                        if (_isAlive == false)
-                          TextFormField(
-                            initialValue: _healthStatus,
-                            decoration: InputDecoration(
-                              labelText: 'Health Status/Notes',
-                              labelStyle: TextStyle(color: subtitleColor),
-                              enabledBorder: isDark
-                                  ? OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Colors.white54,
-                                      ),
-                                    )
-                                  : null,
-                              focusedBorder: isDark
-                                  ? OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                            style: TextStyle(color: textColor),
-                            onSaved: (value) {
-                              _healthStatus = value;
-                            },
+                        TextFormField(
+                          initialValue: _healthStatus,
+                          decoration: InputDecoration(
+                            labelText: _isAlive == true
+                                ? 'Health Status/Notes (Alive)'
+                                : 'Health Status/Notes (Dead)',
+                            labelStyle: TextStyle(color: subtitleColor),
+                            enabledBorder: isDark
+                                ? OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color: Colors.white54,
+                                    ),
+                                  )
+                                : null,
+                            focusedBorder: isDark
+                                ? OutlineInputBorder(
+                                    borderSide: BorderSide(color: Colors.white),
+                                  )
+                                : null,
                           ),
+                          style: TextStyle(color: textColor),
+                          onSaved: (value) {
+                            _healthStatus = value;
+                          },
+                        ),
                       ],
                     ],
                   ),
@@ -1614,7 +1619,6 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                       setState(() {
                         _bandColorOrNull = value;
                         if (value != null) {
-                          // Remove: _bandColor = value;
                           _customBandColor = null;
                         } else {
                           _customBandColor = '';

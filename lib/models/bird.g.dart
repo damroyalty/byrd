@@ -1,10 +1,6 @@
 
 part of 'bird.dart';
 
-// **************************************************************************
-// TypeAdapterGenerator
-// **************************************************************************
-
 class BirdAdapter extends TypeAdapter<Bird> {
   @override
   final int typeId = 4;

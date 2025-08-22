@@ -547,7 +547,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Text(
-                                  "You are currently on version 1.5",
+                                  "You are currently on version 1.6",
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18,
@@ -648,7 +648,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   child: Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
-                      "v1.5 (tap for details)",
+                      "v1.6 (tap for details)",
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 13,
