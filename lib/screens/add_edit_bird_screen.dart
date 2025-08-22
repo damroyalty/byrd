@@ -1301,9 +1301,11 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                         TextFormField(
                           initialValue: _healthStatus,
                           decoration: InputDecoration(
-                            labelText: _isAlive == true
-                                ? 'Health Status/Notes (Alive)'
-                                : 'Health Status/Notes (Dead)',
+                            labelText: _isAlive == null
+                                ? 'Health Status/Notes (sick, healthy, obese, not eating, etc.)'
+                                : _isAlive == true
+                                ? 'Health Status/Notes (sick, healthy, obese, not eating, etc.)'
+                                : 'Health Status/Notes (dead)',
                             labelStyle: TextStyle(color: subtitleColor),
                             enabledBorder: isDark
                                 ? OutlineInputBorder(
