@@ -13,6 +13,7 @@ import 'add_edit_bird_screen.dart';
 import '../dark_mode.dart';
 import '../utils.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../providers/global_colors_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -68,10 +69,30 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 final bird = results[idx];
                 return ListTile(
                   leading: bird.imagePath != null
-                      ? CircleAvatar(
-                          backgroundImage: FileImage(File(bird.imagePath!)),
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: Image.file(
+                              File(bird.imagePath!),
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                         )
-                      : const CircleAvatar(child: Icon(Icons.pets)),
+                      : ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: Container(
+                              color: Colors.grey[300],
+                              child: Icon(Icons.pets, color: Colors.grey[600]),
+                            ),
+                          ),
+                        ),
                   title: Text(bird.breed),
                   subtitle: Text('${bird.typeName} • ${bird.location}'),
                   onTap: () {
@@ -122,6 +143,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _loadColors();
     _loadDarkMode();
     _loadTitleColor();
+    _initializeNavigationBarColor();
 
     _searchFocusNode.addListener(() {
       if (!_searchFocusNode.hasFocus && _showSearchBar) {
@@ -171,6 +193,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     });
   }
 
+  Future<void> _initializeNavigationBarColor() async {
+    final globalColors = Provider.of<GlobalColorsProvider>(context, listen: false);
+    await globalColors.loadColors();
+  }
+
   Future<void> _saveBrownColor(Color color) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('home_customBrown', color.value);
@@ -179,6 +206,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _saveTileGreenColor(Color color) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('home_customTileGreen', color.value);
+    
+    final globalColors = Provider.of<GlobalColorsProvider>(context, listen: false);
+    await globalColors.updateNavigationBarColor(color);
   }
 
   void _showColorPickerDialogForBrown() async {

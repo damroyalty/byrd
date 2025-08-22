@@ -1,5 +1,5 @@
-
 part of 'bird.dart';
+
 
 class BirdAdapter extends TypeAdapter<Bird> {
   @override
@@ -29,13 +29,15 @@ class BirdAdapter extends TypeAdapter<Bird> {
       location: fields[14] as String,
       notes: fields[15] as String,
       additionalImages: (fields[16] as List).cast<String>(),
+      label: fields[17] as String?,
+      orderIndex: fields[18] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Bird obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(19)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -69,7 +71,11 @@ class BirdAdapter extends TypeAdapter<Bird> {
       ..writeByte(15)
       ..write(obj.notes)
       ..writeByte(16)
-      ..write(obj.additionalImages);
+      ..write(obj.additionalImages)
+      ..writeByte(17)
+      ..write(obj.label)
+      ..writeByte(18)
+      ..write(obj.orderIndex);
   }
 
   @override

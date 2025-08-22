@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../tap_particle.dart';
 import '../dark_mode.dart';
 import 'package:path/path.dart' as path;
+import '../providers/global_colors_provider.dart';
 import 'package:path_provider/path_provider.dart';
 
 class AddEditBirdScreen extends StatefulWidget {
@@ -211,6 +212,9 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
   Future<void> _saveTileGreenColor(Color color) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('edit_customTileGreen', color.value.toUnsigned(32));
+    
+    final globalColors = Provider.of<GlobalColorsProvider>(context, listen: false);
+    await globalColors.updateNavigationBarColor(color);
   }
 
   Future<void> _saveTitleColor(Color color) async {
@@ -783,23 +787,59 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                   const SizedBox(height: 14),
                   // profile image //
                   Center(
-                    child: TapParticle(
-                      onTap: _pickImage,
-                      color: customTileGreen,
-                      child: CircleAvatar(
-                        radius: 50,
-                        backgroundColor: customTileGreen.withOpacity(0.15),
-                        backgroundImage: _imageFile != null
-                            ? FileImage(_imageFile!)
-                            : null,
-                        child: _imageFile == null
-                            ? Icon(
-                                Icons.camera_alt,
-                                size: 40,
-                                color: customTileGreen,
-                              )
-                            : null,
-                      ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        TapParticle(
+                          onTap: _pickImage,
+                          color: customTileGreen,
+                          child: CircleAvatar(
+                            radius: 50,
+                            backgroundColor: customTileGreen.withOpacity(0.15),
+                            backgroundImage: _imageFile != null
+                                ? FileImage(_imageFile!)
+                                : null,
+                            child: _imageFile == null
+                                ? Icon(
+                                    Icons.camera_alt,
+                                    size: 40,
+                                    color: customTileGreen,
+                                  )
+                                : null,
+                          ),
+                        ),
+                        if (_imageFile != null)
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: TapParticle(
+                              color: customTileGreen,
+                              onTap: () async {
+                                final cropped = await _cropImage(_imageFile!);
+                                if (cropped != null) {
+                                  final saved = await _persistImage(cropped);
+                                  setState(() {
+                                    _imageFile = saved;
+                                  });
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.12),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(Icons.crop, color: customTileGreen, size: 22),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -1301,11 +1341,9 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                         TextFormField(
                           initialValue: _healthStatus,
                           decoration: InputDecoration(
-                            labelText: _isAlive == null
-                                ? 'Health Status/Notes (sick, healthy, obese, not eating, etc.)'
-                                : _isAlive == true
-                                ? 'Health Status/Notes (sick, healthy, obese, not eating, etc.)'
-                                : 'Health Status/Notes (dead)',
+                            labelText: _isAlive == true
+                            ? 'Health Status/Notes (sick, bumble foot, not eating, etc.)'
+                            : 'Health Status/Notes (dead)',
                             labelStyle: TextStyle(color: subtitleColor),
                             enabledBorder: isDark
                                 ? OutlineInputBorder(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/birds_provider.dart';
+import 'providers/global_colors_provider.dart';
 import 'screens/home_screen.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'models/bird.dart';
@@ -22,25 +23,32 @@ class ByrdApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => BirdsProvider(),
-      child: MaterialApp(
-        title: 'cluckers',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.green,
-          colorScheme: ColorScheme.fromSwatch(
-            primarySwatch: Colors.green,
-            accentColor: Colors.brown,
-            backgroundColor: Colors.brown,
-          ),
-          scaffoldBackgroundColor: Colors.white,
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
-          ),
-        ),
-        home: const HomeScreen(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => BirdsProvider()),
+        ChangeNotifierProvider(create: (_) => GlobalColorsProvider()),
+      ],
+      child: Consumer<GlobalColorsProvider>(
+        builder: (context, globalColors, child) {
+          return MaterialApp(
+            title: 'cluckers',
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              primarySwatch: Colors.green,
+              colorScheme: ColorScheme.fromSwatch(
+                primarySwatch: Colors.green,
+                accentColor: Colors.brown,
+                backgroundColor: Colors.brown,
+              ),
+              scaffoldBackgroundColor: Colors.white,
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+            ),
+            home: const HomeScreen(),
+          );
+        },
       ),
     );
   }

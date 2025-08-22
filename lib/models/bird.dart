@@ -89,6 +89,8 @@ class Bird extends HiveObject {
   List<String> additionalImages;
   @HiveField(17)
   String? label;
+  @HiveField(18)
+  int? orderIndex;
 
   Bird({
     String? id,
@@ -109,6 +111,7 @@ class Bird extends HiveObject {
     this.notes = '',
     this.additionalImages = const [],
     this.label,
+    this.orderIndex,
   }) : id = id ?? const Uuid().v4();
 
   String get typeName {
