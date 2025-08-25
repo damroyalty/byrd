@@ -18,7 +18,7 @@ enum AliveFilter { any, alive, dead }
 class BirdListScreen extends StatefulWidget {
   final BirdType birdType;
 
-  const BirdListScreen({super.key, required this.birdType});
+  const BirdListScreen({Key? key, required this.birdType}) : super(key: key);
 
   @override
   State<BirdListScreen> createState() => _BirdListScreenState();
@@ -747,9 +747,8 @@ class _BirdListScreenState extends State<BirdListScreen>
 
   @override
   Widget build(BuildContext context) {
-    final birds = Provider.of<BirdsProvider>(
-      context,
-    ).getBirdsByType(widget.birdType);
+    final birdsProvider = Provider.of<BirdsProvider>(context);
+    final birds = birdsProvider.getBirdsByType(widget.birdType);
     final bird = Bird(
       type: widget.birdType,
       breed: '',
@@ -992,10 +991,13 @@ class _BirdListScreenState extends State<BirdListScreen>
                   Expanded(
                     child: ReorderableListView.builder(
                       onReorder: (oldIndex, newIndex) {
-                        Provider.of<BirdsProvider>(
-                          context,
-                          listen: false,
-                        ).reorderBirds(widget.birdType, oldIndex, newIndex);
+                        setState(() {
+                          birdsProvider.reorderBirds(
+                            widget.birdType,
+                            oldIndex,
+                            newIndex,
+                          );
+                        });
                       },
                       itemCount: filteredBirds.length,
                       itemBuilder: (ctx, index) {
@@ -1675,11 +1677,11 @@ class _TileImageCarousel extends StatefulWidget {
   final void Function(String imgPath, List<String> allImages) onTap;
 
   const _TileImageCarousel({
-    super.key,
+    Key? key,
     required this.profileImage,
     required this.additionalImages,
     required this.onTap,
-  });
+  }) : super(key: key);
 
   @override
   State<_TileImageCarousel> createState() => _TileImageCarouselState();
