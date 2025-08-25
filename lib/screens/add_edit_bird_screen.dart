@@ -11,7 +11,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../tap_particle.dart';
 import '../dark_mode.dart';
 import 'package:path/path.dart' as path;
-import '../providers/global_colors_provider.dart';
 import 'package:path_provider/path_provider.dart';
 
 class AddEditBirdScreen extends StatefulWidget {
@@ -197,10 +196,12 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
       final greenValue = prefs.getInt('edit_customTileGreen');
       final titleColorValue = prefs.getInt('edit_customTitleColor');
       if (brownValue != null) customBrown = Color(brownValue.toUnsigned(32));
-      if (greenValue != null)
+      if (greenValue != null) {
         customTileGreen = Color(greenValue.toUnsigned(32));
-      if (titleColorValue != null)
+      }
+      if (titleColorValue != null) {
         _customTitleColor = Color(titleColorValue.toUnsigned(32));
+      }
     });
   }
 
@@ -212,9 +213,6 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
   Future<void> _saveTileGreenColor(Color color) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('edit_customTileGreen', color.value.toUnsigned(32));
-    
-    final globalColors = Provider.of<GlobalColorsProvider>(context, listen: false);
-    await globalColors.updateNavigationBarColor(color);
   }
 
   Future<void> _saveTitleColor(Color color) async {
@@ -615,7 +613,7 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
     if (_replacementDate != null) {
       final dateStr = _replacementDate!.toIso8601String().split('T').first;
       notesToSave =
-          '${notesToSave.isNotEmpty ? notesToSave.trim() + '\n' : ''}Replacement Date: $dateStr';
+          '${notesToSave.isNotEmpty ? '${notesToSave.trim()}\n' : ''}Replacement Date: $dateStr';
     }
 
     // add chicken type to notes if chicken is selected //
@@ -625,8 +623,7 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
         '',
       );
       notesToSave =
-          (notesToSave.isNotEmpty ? notesToSave.trim() + '\n' : '') +
-          'Chicken Type: $_chickenType';
+          '${notesToSave.isNotEmpty ? '${notesToSave.trim()}\n' : ''}Chicken Type: $_chickenType';
     }
 
     // add chicken color for special breeds to notes //
@@ -638,8 +635,7 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
         '',
       );
       notesToSave =
-          (notesToSave.isNotEmpty ? notesToSave.trim() + '\n' : '') +
-          '${_breed.replaceAll(' ', '')} Color/Type: $_chickenColorType';
+          '${notesToSave.isNotEmpty ? '${notesToSave.trim()}\n' : ''}${_breed.replaceAll(' ', '')} Color/Type: $_chickenColorType';
     }
 
     // add runner duck color to notes if selected //
@@ -651,8 +647,7 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
         '',
       );
       notesToSave =
-          (notesToSave.isNotEmpty ? notesToSave.trim() + '\n' : '') +
-          'Runner Color/Type: $_runnerColorType';
+          '${notesToSave.isNotEmpty ? '${notesToSave.trim()}\n' : ''}Runner Color/Type: $_runnerColorType';
     }
 
     // add toulouse goose color to notes if selected //
@@ -664,8 +659,7 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
         '',
       );
       notesToSave =
-          (notesToSave.isNotEmpty ? notesToSave.trim() + '\n' : '') +
-          'Toulouse Color/Type: $_toulouseColorType';
+          '${notesToSave.isNotEmpty ? '${notesToSave.trim()}\n' : ''}Toulouse Color/Type: $_toulouseColorType';
     }
 
     final bird = Bird(
@@ -835,7 +829,11 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                                     ),
                                   ],
                                 ),
-                                child: Icon(Icons.crop, color: customTileGreen, size: 22),
+                                child: Icon(
+                                  Icons.crop,
+                                  color: customTileGreen,
+                                  size: 22,
+                                ),
                               ),
                             ),
                           ),
@@ -1167,15 +1165,6 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                             Text('Dual', style: TextStyle(color: textColor)),
                           ],
                         ),
-                        const SizedBox(height: 14),
-                        if (_chickenType == null || _chickenType!.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.only(left: 8.0),
-                            child: Text(
-                              'Please select chicken type',
-                              style: TextStyle(color: Colors.red, fontSize: 12),
-                            ),
-                          ),
                       ],
                     ),
 
@@ -1294,7 +1283,8 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                             return null;
                           },
                         ),
-                      if (_source == SourceType.egg) ...[
+                      if (_source == SourceType.egg ||
+                          _source == SourceType.store) ...[
                         const SizedBox(height: 10),
                         Text('Status', style: TextStyle(color: textColor)),
                         Row(
@@ -1341,9 +1331,9 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                         TextFormField(
                           initialValue: _healthStatus,
                           decoration: InputDecoration(
-                            labelText: _isAlive == true
-                            ? 'Health Status/Notes (sick, bumble foot, not eating, etc.)'
-                            : 'Health Status/Notes (dead)',
+                            labelText: (_isAlive == null || _isAlive == true)
+                                ? 'Health Status/Notes (sick, bumble foot, not eating, etc.)'
+                                : 'Health Status/Notes (dead)',
                             labelStyle: TextStyle(color: subtitleColor),
                             enabledBorder: isDark
                                 ? OutlineInputBorder(
@@ -1669,6 +1659,7 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                   const SizedBox(height: 14),
                   if (_bandColorOrNull == null)
                     TextFormField(
+                      key: const ValueKey('customBandColorField'),
                       initialValue: _customBandColor,
                       decoration: InputDecoration(
                         labelText: 'Custom Band Color',
@@ -1702,6 +1693,7 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
 
                   // location //
                   TextFormField(
+                    key: const ValueKey('locationField'),
                     initialValue: _location,
                     decoration: InputDecoration(
                       labelText: 'Location',
@@ -1722,9 +1714,9 @@ class _AddEditBirdScreenState extends State<AddEditBirdScreen> {
                       _location = value!;
                     },
                   ),
+                  const SizedBox(height: 10),
 
                   // replacement date //
-                  const SizedBox(height: 10),
                   Text('Replacement Date', style: TextStyle(color: textColor)),
                   TapParticle(
                     onTap: () async {
@@ -2019,7 +2011,6 @@ class _AnimatedTapWidget extends StatefulWidget {
   final VoidCallback onTap;
   final Color color;
   const _AnimatedTapWidget({
-    super.key,
     required this.child,
     required this.onTap,
     required this.color,

@@ -9,7 +9,6 @@ import 'bird_list_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../tap_particle.dart';
 import 'dart:ui';
-import 'add_edit_bird_screen.dart';
 import '../dark_mode.dart';
 import '../utils.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -1354,9 +1353,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       backgroundColor: Colors.white,
                       elevation: 2,
                       onPressed: _resetAllColors,
-                      child: Icon(Icons.refresh, color: Colors.brown, size: 16),
                       mini: true,
                       tooltip: 'Reset theme colors to default',
+                      child: Icon(Icons.refresh, color: Colors.brown, size: 16),
                     ),
                   ),
                 ),
@@ -1372,13 +1371,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       backgroundColor: Colors.white,
                       elevation: 2,
                       onPressed: _showSupportPopup,
+                      mini: true,
+                      tooltip: 'Support the dev',
                       child: Icon(
                         Icons.attach_money,
                         color: Colors.green[800],
                         size: 18,
                       ),
-                      mini: true,
-                      tooltip: 'Support the dev',
                     ),
                   ),
                 ),
@@ -1451,18 +1450,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (svgAsset != null)
-                    SvgPicture.asset(
-                      svgAsset,
-                      width: 48,
-                      height: 48,
-                      colorFilter: ColorFilter.mode(
-                        customTileGreen,
-                        BlendMode.srcIn,
-                      ),
-                    )
-                  else
-                    Icon(_getBirdIcon(type), size: 48, color: customTileGreen),
+                  SvgPicture.asset(
+                    svgAsset,
+                    width: 48,
+                    height: 48,
+                    colorFilter: ColorFilter.mode(
+                      customTileGreen,
+                      BlendMode.srcIn,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     bird.typeName,

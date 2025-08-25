@@ -10,7 +10,10 @@ import '../tap_particle.dart';
 import '../dark_mode.dart';
 import 'dart:async';
 import 'dart:math';
-import '../providers/global_colors_provider.dart';
+
+enum SortField { name, breed, bandColor, gender, alive }
+
+enum AliveFilter { any, alive, dead }
 
 class BirdListScreen extends StatefulWidget {
   final BirdType birdType;
@@ -21,22 +24,44 @@ class BirdListScreen extends StatefulWidget {
   State<BirdListScreen> createState() => _BirdListScreenState();
 }
 
-class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStateMixin {
+class _BirdListScreenState extends State<BirdListScreen>
+    with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   bool _showSearchBar = false;
   final FocusNode _searchFocusNode = FocusNode();
   final Duration _searchAnimDuration = const Duration(milliseconds: 250);
 
+  final TextEditingController _breedFilterController = TextEditingController();
+  SortField _sortField = SortField.name;
+  bool _sortAsc = true;
+  Gender? _genderFilter;
+  AliveFilter _aliveFilter = AliveFilter.any;
+
   late AnimationController _animationController;
   late Animation<double> _shakeAnimation;
   late Animation<double> _bounceAnimation;
   Timer? _animationTimer;
 
-  // color picker //
   Color customBrown = Colors.brown;
   Color customTileGreen = const Color(0xFF388E3C);
   Color? _customTitleColor;
+
+  final Map<String, Color> bandColorMap = {
+    'red': Colors.red,
+    'pink': Colors.pink,
+    'blue': Colors.blue,
+    'orange': Colors.orange,
+    'yellow': Colors.yellow,
+    'green': Colors.green,
+    'purple': Colors.purple,
+    'brown': Colors.brown,
+    'black': Colors.black,
+    'white': Colors.grey[300]!,
+    'grey': Colors.grey,
+  };
+
+  Set<String> _selectedBandColors = <String>{};
 
   @override
   void initState() {
@@ -51,26 +76,20 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
         });
       }
     });
-    
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    
+
     _shakeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.elasticOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
     );
-    
+
     _bounceAnimation = Tween<double>(begin: 1, end: 1.2).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-    
+
     _startAnimationTimer();
   }
 
@@ -85,7 +104,340 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
     _animationController.dispose();
     _animationTimer?.cancel();
     _searchFocusNode.dispose();
+    _breedFilterController.dispose();
     super.dispose();
+  }
+
+  String _effectiveName(Bird b) {
+    final label = (b.label ?? '').trim();
+    if (label.isNotEmpty) return label.toLowerCase();
+    final breed = b.breed.trim();
+    if (breed.isNotEmpty) return breed.toLowerCase();
+    final loc = b.location.trim();
+    if (loc.isNotEmpty) return loc.toLowerCase();
+    return b.typeName.toLowerCase();
+  }
+
+  String _bandColorText(Bird b) {
+    if (b.customBandColor != null && b.customBandColor!.isNotEmpty) {
+      return b.customBandColor!.toLowerCase();
+    }
+    return b.bandColor.toString().split('.').last.toLowerCase();
+  }
+
+  void _openSortFilterSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).dialogBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        bool tempSortAsc = _sortAsc;
+        Gender? tempGender = _genderFilter;
+        AliveFilter tempAlive = _aliveFilter;
+        final TextEditingController tempBreed = TextEditingController(
+          text: _breedFilterController.text,
+        );
+        Set<String> tempSelectedBandColors = Set<String>.from(
+          _selectedBandColors,
+        );
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            final textColor = isDark ? Colors.white : Colors.black;
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 12,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 12,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.filter_list, color: customTileGreen),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Sort & Filter',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: textColor,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          color: textColor,
+                          onPressed: () => Navigator.of(ctx).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InputDecorator(
+                            decoration: InputDecoration(
+                              labelText: 'Sort',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Name/Label'),
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Asc',
+                                      style: TextStyle(
+                                        color: tempSortAsc
+                                            ? customTileGreen
+                                            : textColor,
+                                        fontWeight: tempSortAsc
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                    Switch(
+                                      activeColor: customTileGreen,
+                                      inactiveTrackColor: customTileGreen
+                                          .withOpacity(0.3),
+                                      value: !tempSortAsc,
+                                      onChanged: (val) => setModalState(() {
+                                        tempSortAsc = !val;
+                                      }),
+                                    ),
+                                    Text(
+                                      'Desc',
+                                      style: TextStyle(
+                                        color: !tempSortAsc
+                                            ? customTileGreen
+                                            : textColor,
+                                        fontWeight: !tempSortAsc
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    Text(
+                      'Filters',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: textColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FilterChip(
+                          selectedColor: customTileGreen.withOpacity(0.2),
+                          checkmarkColor: customTileGreen,
+                          label: Text('Any'),
+                          selected: tempAlive == AliveFilter.any,
+                          onSelected: (_) => setModalState(() {
+                            tempAlive = AliveFilter.any;
+                          }),
+                        ),
+                        FilterChip(
+                          selectedColor: customTileGreen.withOpacity(0.2),
+                          checkmarkColor: customTileGreen,
+                          label: Text('Alive'),
+                          selected: tempAlive == AliveFilter.alive,
+                          onSelected: (_) => setModalState(() {
+                            tempAlive = AliveFilter.alive;
+                          }),
+                        ),
+                        FilterChip(
+                          selectedColor: customTileGreen.withOpacity(0.2),
+                          checkmarkColor: customTileGreen,
+                          label: Text('Dead'),
+                          selected: tempAlive == AliveFilter.dead,
+                          onSelected: (_) => setModalState(() {
+                            tempAlive = AliveFilter.dead;
+                          }),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('Any gender'),
+                          selected: tempGender == null,
+                          selectedColor: customTileGreen.withOpacity(0.2),
+                          onSelected: (_) => setModalState(() {
+                            tempGender = null;
+                          }),
+                        ),
+                        ChoiceChip(
+                          label: const Text('Male'),
+                          selected: tempGender == Gender.male,
+                          selectedColor: customTileGreen.withOpacity(0.2),
+                          onSelected: (_) => setModalState(() {
+                            tempGender = Gender.male;
+                          }),
+                        ),
+                        ChoiceChip(
+                          label: const Text('Female'),
+                          selected: tempGender == Gender.female,
+                          selectedColor: customTileGreen.withOpacity(0.2),
+                          onSelected: (_) => setModalState(() {
+                            tempGender = Gender.female;
+                          }),
+                        ),
+                        ChoiceChip(
+                          label: const Text('Unknown'),
+                          selected: tempGender == Gender.unknown,
+                          selectedColor: customTileGreen.withOpacity(0.2),
+                          onSelected: (_) => setModalState(() {
+                            tempGender = Gender.unknown;
+                          }),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: tempBreed,
+                      decoration: InputDecoration(
+                        labelText: 'Breed contains',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Band Colors',
+                      style: TextStyle(
+                        color: textColor.withOpacity(0.7),
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _getAllBandColors().map((color) {
+                        final displayColor =
+                            bandColorMap[color] ?? customTileGreen;
+                        return FilterChip(
+                          selected: tempSelectedBandColors.contains(color),
+                          selectedColor: displayColor.withOpacity(0.2),
+                          checkmarkColor: displayColor,
+                          backgroundColor: Colors.transparent,
+                          side: BorderSide(
+                            color: tempSelectedBandColors.contains(color)
+                                ? displayColor
+                                : Theme.of(context).dividerColor,
+                          ),
+                          avatar: CircleAvatar(
+                            backgroundColor: displayColor,
+                            radius: 12,
+                          ),
+                          label: Text(
+                            color[0].toUpperCase() + color.substring(1),
+                            style: TextStyle(
+                              color: tempSelectedBandColors.contains(color)
+                                  ? displayColor
+                                  : Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium?.color,
+                            ),
+                          ),
+                          onSelected: (bool selected) {
+                            setModalState(() {
+                              if (selected) {
+                                tempSelectedBandColors.add(color);
+                              } else {
+                                tempSelectedBandColors.remove(color);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            setModalState(() {
+                              tempSortAsc = true;
+                              tempGender = null;
+                              tempAlive = AliveFilter.any;
+                              tempBreed.clear();
+                              tempSelectedBandColors.clear();
+                            });
+                          },
+                          style: TextButton.styleFrom(
+                            foregroundColor: customTileGreen,
+                          ),
+                          child: const Text('Clear'),
+                        ),
+                        const Spacer(),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _sortField = SortField.name;
+                              _sortAsc = tempSortAsc;
+                              _genderFilter = tempGender;
+                              _aliveFilter = tempAlive;
+                              _breedFilterController.text = tempBreed.text;
+                              _selectedBandColors = Set<String>.from(
+                                tempSelectedBandColors,
+                              );
+                            });
+                            Navigator.of(ctx).pop();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: customTileGreen,
+                            foregroundColor: Colors.white,
+                          ),
+                          icon: const Icon(Icons.check),
+                          label: const Text('Apply'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> _loadColors() async {
@@ -112,9 +464,6 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
   Future<void> _saveTileGreenColor(Color color) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('list_customTileGreen', color.value);
-    
-    final globalColors = Provider.of<GlobalColorsProvider>(context, listen: false);
-    await globalColors.updateNavigationBarColor(color);
   }
 
   Future<void> _saveTitleColor(Color color) async {
@@ -261,9 +610,6 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
           insetPadding: const EdgeInsets.all(16),
           child: StatefulBuilder(
             builder: (context, setState) {
-              int currentIndex = controller.hasClients
-                  ? controller.page?.round() ?? initialIndex
-                  : initialIndex;
               return Stack(
                 alignment: Alignment.center,
                 children: [
@@ -343,7 +689,61 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
     );
   }
 
+  Widget _buildBandChip(Bird bird, bool isDark) {
+    final Map<String, Color> bandColorMap = {
+      'red': Colors.red,
+      'blue': Colors.blue,
+      'green': Colors.green,
+      'yellow': Colors.yellow,
+      'orange': Colors.orange,
+      'purple': Colors.purple,
+      'pink': Colors.pink,
+      'black': Colors.black,
+      'white': Colors.white,
+      'none': Colors.transparent,
+    };
+    final String bandColorName =
+        (bird.customBandColor != null && bird.customBandColor!.isNotEmpty)
+        ? bird.customBandColor!.toLowerCase()
+        : bird.bandColor.toString().split('.').last.toLowerCase();
+    final Color bandColor = bandColorMap[bandColorName] ?? customTileGreen;
 
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: bandColor.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: bandColor.withOpacity(0.5)),
+      ),
+      child: Text(
+        (bird.customBandColor != null && bird.customBandColor!.isNotEmpty)
+            ? bird.customBandColor!
+            : bird.bandColor.toString().split('.').last,
+        style: TextStyle(
+          color: isDark ? Colors.white : Colors.black,
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+        ),
+      ),
+    );
+  }
+
+  List<String> _getAllBandColors() {
+    final Set<String> colors = {};
+
+    colors.addAll(
+      BandColor.values.map((c) => c.toString().split('.').last.toLowerCase()),
+    );
+
+    final birds = Provider.of<BirdsProvider>(context, listen: false).birds;
+    for (var bird in birds) {
+      if (bird.customBandColor != null && bird.customBandColor!.isNotEmpty) {
+        colors.add(bird.customBandColor!.toLowerCase());
+      }
+    }
+
+    return colors.toList()..sort();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -361,23 +761,93 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
       location: '',
     );
 
-    // bird count (alive) //
-    final int totalQuantity = birds.where((b) => b.isAlive == true).fold(0, (sum, b) => sum + b.quantity);
+    final int totalQuantity = birds
+        .where((b) => b.isAlive == true)
+        .fold(0, (sum, b) => sum + b.quantity);
 
-    // search query //
-    final filteredBirds = _searchQuery.isEmpty
-        ? birds
-        : birds
-              .where(
-                (b) =>
-                    b.breed.toLowerCase().contains(
-                      _searchQuery.toLowerCase(),
-                    ) ||
-                    b.location.toLowerCase().contains(
-                      _searchQuery.toLowerCase(),
-                    ),
-              )
-              .toList();
+    List<Bird> filteredBirds = List.of(birds);
+
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      filteredBirds = filteredBirds.where((b) {
+        final label = (b.label ?? '').toLowerCase();
+        final breed = b.breed.toLowerCase();
+        final loc = b.location.toLowerCase();
+        final typeName = b.typeName.toLowerCase();
+        final bandColor = _bandColorText(b);
+        final gender = b.gender.toString().split('.').last.toLowerCase();
+        final notes = b.notes.toLowerCase();
+        final sourceDetail = (b.sourceDetail ?? '').toLowerCase();
+        return label.contains(q) ||
+            breed.contains(q) ||
+            loc.contains(q) ||
+            typeName.contains(q) ||
+            bandColor.contains(q) ||
+            gender.contains(q) ||
+            notes.contains(q) ||
+            sourceDetail.contains(q);
+      }).toList();
+    }
+
+    final breedQuery = _breedFilterController.text.trim().toLowerCase();
+    if (breedQuery.isNotEmpty) {
+      filteredBirds = filteredBirds
+          .where((b) => b.breed.toLowerCase().contains(breedQuery))
+          .toList();
+    }
+
+    if (_selectedBandColors.isNotEmpty) {
+      filteredBirds = filteredBirds
+          .where((b) => _selectedBandColors.contains(_bandColorText(b)))
+          .toList();
+    }
+
+    if (_genderFilter != null) {
+      filteredBirds = filteredBirds
+          .where((b) => b.gender == _genderFilter)
+          .toList();
+    }
+
+    if (_aliveFilter != AliveFilter.any) {
+      filteredBirds = filteredBirds
+          .where(
+            (b) => _aliveFilter == AliveFilter.alive
+                ? b.isAlive == true
+                : b.isAlive == false,
+          )
+          .toList();
+    }
+
+    int cmpStrings(String a, String b) => a.compareTo(b);
+
+    if (!(_sortField == SortField.name && _sortAsc)) {
+      if (!(_sortField == SortField.name && _sortAsc)) {
+        filteredBirds.sort((a, b) {
+          int cmp;
+          switch (_sortField) {
+            case SortField.name:
+              cmp = cmpStrings(_effectiveName(a), _effectiveName(b));
+              break;
+            case SortField.breed:
+              cmp = cmpStrings(a.breed.toLowerCase(), b.breed.toLowerCase());
+              break;
+            case SortField.bandColor:
+              cmp = cmpStrings(_bandColorText(a), _bandColorText(b));
+              break;
+            case SortField.gender:
+              cmp = a.gender.index.compareTo(b.gender.index);
+              break;
+            case SortField.alive:
+              int va = a.isAlive == true ? 0 : (a.isAlive == false ? 1 : 2);
+              int vb = b.isAlive == true ? 0 : (b.isAlive == false ? 1 : 2);
+              cmp = va.compareTo(vb);
+              break;
+          }
+          final bool asc = _sortField == SortField.name ? _sortAsc : true;
+          return asc ? cmp : -cmp;
+        });
+      }
+    }
 
     return ValueListenableBuilder<bool>(
       valueListenable: darkModeNotifier,
@@ -388,7 +858,6 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
           backgroundColor: isDark ? const Color(0xFF181818) : Colors.white,
           appBar: AppBar(
             backgroundColor: customBrown,
-            elevation: 0,
             leading: TapParticle(
               onTap: () => Navigator.of(context).maybePop(),
               color: customTileGreen,
@@ -426,6 +895,11 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
             ),
             titleSpacing: 4.0,
             actions: [
+              IconButton(
+                icon: const Icon(Icons.filter_list),
+                tooltip: 'Sort/Filter',
+                onPressed: _openSortFilterSheet,
+              ),
               AnimatedSwitcher(
                 duration: _searchAnimDuration,
                 transitionBuilder: (child, animation) => SizeTransition(
@@ -517,210 +991,193 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
                 children: [
                   Expanded(
                     child: ReorderableListView.builder(
-                      itemCount: filteredBirds.length,
                       onReorder: (oldIndex, newIndex) {
-                        final originalBirds = birds;
-                        final oldBird = filteredBirds[oldIndex];
-                        final oldOriginalIndex = originalBirds.indexWhere((b) => b.id == oldBird.id);
-                        
-                        int newOriginalIndex;
-                        if (newIndex >= filteredBirds.length) {
-                          newOriginalIndex = originalBirds.indexWhere((b) => b.id == filteredBirds.last.id);
-                        } else {
-                          final newBird = filteredBirds[newIndex];
-                          newOriginalIndex = originalBirds.indexWhere((b) => b.id == newBird.id);
-                        }
-                        
-                        Provider.of<BirdsProvider>(context, listen: false)
-                            .reorderBirds(widget.birdType, oldOriginalIndex, newOriginalIndex);
+                        Provider.of<BirdsProvider>(
+                          context,
+                          listen: false,
+                        ).reorderBirds(widget.birdType, oldIndex, newIndex);
                       },
+                      itemCount: filteredBirds.length,
                       itemBuilder: (ctx, index) {
                         final bird = filteredBirds[index];
                         String? statusDetails;
-                        if (bird.isAlive == false && bird.healthStatus != null && bird.healthStatus!.isNotEmpty) {
+                        if (bird.isAlive == false &&
+                            bird.healthStatus != null &&
+                            bird.healthStatus!.isNotEmpty) {
                           statusDetails = bird.healthStatus;
                         }
-                                return TapParticle(
-          key: ValueKey(bird.id),
-  color: customTileGreen,
-  child: ConstrainedBox(
-    constraints: const BoxConstraints(
-      minHeight: 100,
-    ),
-    child: ListTile(
-    contentPadding: const EdgeInsets.only(left: 16, right: 32, top: 8, bottom: 8),
-    leading: (bird.imagePath != null &&
-            bird.imagePath!.isNotEmpty &&
-            File(bird.imagePath!).existsSync())
-        ? ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.file(
-              File(bird.imagePath!),
-              width: 80,
-              height: 200,
-              fit: BoxFit.cover,
-            ),
-          )
-        : (bird.additionalImages.any(
-            (img) => img.isNotEmpty && File(img).existsSync(),
-          ))
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: _TileImageCarousel(
-                  profileImage: bird.imagePath,
-                  additionalImages: bird.additionalImages
-                      .where(
-                        (img) => img.isNotEmpty && File(img).existsSync(),
-                      )
-                      .toList(),
-                  onTap: (imgPath, allImages) =>
-                      _showImagePopup(context, imgPath, allImages: allImages),
-                ),
-              )
-            : Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: customTileGreen.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Icon(Icons.pets, color: textColor, size: 20),
-              ),
-    title: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (bird.label != null && bird.label!.isNotEmpty)
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 8, vertical: 2), 
-            decoration: BoxDecoration(
-              color: customTileGreen.withOpacity(0.15),
-              border: Border.all(color: customTileGreen, width: 1.0),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              bird.label!,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-                fontFamily: 'Segoe UI',
-              ),
-            ),
-          ),
-        bird.location.isNotEmpty
-            ? Text(
-                bird.location,
-                style: TextStyle(color: textColor),
-              )
-            : Text(
-                'No Location/Pin',
-                style: TextStyle(color: textColor),
-              ),
-      ],
-    ),
-    subtitle: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Breed: ${bird.breed}\nQty: ${bird.quantity} • ${bird.gender.toString().split('.').last}',
-          style: TextStyle(color: subtitleColor),
-        ),
-        if (statusDetails != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 2.0),
-            child: Text(
-              '$statusDetails',
-              style: TextStyle(
-                color: Colors.red[300],
-                fontWeight: FontWeight.w500,
-                fontSize: 13,
-              ),
-            ),
-          ),
-      ],
-    ),
-    trailing: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            (() {
-              final Map<String, Color> bandColorMap = {
-                'red': Colors.red,
-                'blue': Colors.blue,
-                'green': Colors.green,
-                'yellow': Colors.yellow,
-                'orange': Colors.orange,
-                'purple': Colors.purple,
-                'pink': Colors.pink,
-                'black': Colors.black,
-                'white': Colors.white,
-                'none': Colors.transparent,
-              };
-              String bandColorName = (bird.customBandColor != null &&
-                      bird.customBandColor!.isNotEmpty)
-                  ? bird.customBandColor!.toLowerCase()
-                  : bird.bandColor.toString().split('.').last.toLowerCase();
-              Color bandColor = bandColorMap[bandColorName] ?? customTileGreen;
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: bandColor.withOpacity(0.18),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: bandColor.withOpacity(0.5)),
-                ),
-                child: Text(
-                  (bird.customBandColor != null && bird.customBandColor!.isNotEmpty)
-                      ? bird.customBandColor!
-                      : bird.bandColor.toString().split('.').last,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
-                ),
-              );
-            })(),
-            if (bird.type == BirdType.chicken && bird.chickenType != null)
-              Text(
-                bird.chickenType!,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isDark ? Colors.grey[300] : Colors.grey,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(width: 8),
-        const SizedBox(width: 24),
-      ],
-    ),
-  ),
-                        ),
-
-
+                        return TapParticle(
+                          key: ValueKey(bird.id),
+                          color: customTileGreen,
+                          child: ListTile(
+                            leading:
+                                (bird.imagePath != null &&
+                                    bird.imagePath!.isNotEmpty &&
+                                    File(bird.imagePath!).existsSync())
+                                ? SizedBox(
+                                    width: 100,
+                                    height: 100,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.file(
+                                        File(bird.imagePath!),
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  )
+                                : (bird.additionalImages.any(
+                                    (img) =>
+                                        img.isNotEmpty &&
+                                        File(img).existsSync(),
+                                  ))
+                                ? SizedBox(
+                                    width: 100,
+                                    height: 100,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: _TileImageCarousel(
+                                        profileImage: bird.imagePath,
+                                        additionalImages: bird.additionalImages
+                                            .where(
+                                              (img) =>
+                                                  img.isNotEmpty &&
+                                                  File(img).existsSync(),
+                                            )
+                                            .toList(),
+                                        onTap: (imgPath, allImages) =>
+                                            _showImagePopup(
+                                              context,
+                                              imgPath,
+                                              allImages: allImages,
+                                            ),
+                                      ),
+                                    ),
+                                  )
+                                : SizedBox(
+                                    width: 100,
+                                    height: 100,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        color: customTileGreen.withOpacity(
+                                          0.15,
+                                        ),
+                                        child: Icon(
+                                          Icons.pets,
+                                          color: textColor,
+                                          size: 48,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                            title: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (bird.label != null &&
+                                    bird.label!.isNotEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: customTileGreen.withOpacity(0.15),
+                                      border: Border.all(
+                                        color: customTileGreen,
+                                        width: 1.0,
+                                      ),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      bird.label!,
+                                      style: TextStyle(
+                                        color: textColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        fontFamily: 'Segoe UI',
+                                      ),
+                                    ),
+                                  ),
+                                bird.location.isNotEmpty
+                                    ? Text(
+                                        bird.location,
+                                        style: TextStyle(color: textColor),
+                                      )
+                                    : Text(
+                                        'No Location/Pin',
+                                        style: TextStyle(color: textColor),
+                                      ),
+                              ],
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Breed: ${bird.breed}\nQty: ${bird.quantity} • ${bird.gender.toString().split('.').last}',
+                                  style: TextStyle(color: subtitleColor),
+                                ),
+                                if (statusDetails != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 2.0),
+                                    child: Text(
+                                      statusDetails,
+                                      style: TextStyle(
+                                        color: Colors.red[300],
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            trailing: Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  _buildBandChip(bird, isDark),
+                                  if (bird.type == BirdType.chicken &&
+                                      bird.chickenType != null)
+                                    Text(
+                                      bird.chickenType!,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: isDark
+                                            ? Colors.grey[300]
+                                            : Colors.grey,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
 
                           onTap: () {
                             showDialog(
                               context: context,
                               builder: (ctx) {
-                                TextStyle labelStyle = const TextStyle(
+                                TextStyle labelStyle = TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 17,
                                   fontFamily: 'Segoe UI',
+                                  color: isDark ? Colors.white : Colors.black,
                                 );
-                                TextStyle valueStyle = const TextStyle(
+                                TextStyle valueStyle = TextStyle(
                                   fontWeight: FontWeight.w400,
                                   fontSize: 17,
                                   fontFamily: 'Segoe UI',
+                                  color: isDark
+                                      ? Colors.white70
+                                      : Colors.black87,
                                 );
                                 return Dialog(
-                                  backgroundColor: Colors.white.withOpacity(
-                                    0.95,
-                                  ),
+                                  backgroundColor: isDark
+                                      ? const Color(0xFF1E1E1E)
+                                      : Colors.white.withOpacity(0.95),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(18),
                                   ),
@@ -734,14 +1191,28 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
                                         children: [
                                           Row(
                                             children: [
-                                              Text(
-                                                bird.typeName,
-                                                style: labelStyle.copyWith(
-                                                  fontSize: 20,
-                                                  color: customTileGreen,
+                                              Expanded(
+                                                child: Align(
+                                                  alignment:
+                                                      Alignment.centerLeft,
+                                                  child: Text(
+                                                    (bird.label != null &&
+                                                            bird
+                                                                .label!
+                                                                .isNotEmpty)
+                                                        ? bird.label!
+                                                        : bird.typeName,
+                                                    style: labelStyle.copyWith(
+                                                      fontSize: 20,
+                                                      color: customTileGreen,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 1,
+                                                    textAlign: TextAlign.start,
+                                                  ),
                                                 ),
                                               ),
-                                              const Spacer(),
                                               IconButton(
                                                 icon: Icon(
                                                   Icons.edit,
@@ -765,7 +1236,7 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
                                               IconButton(
                                                 icon: Icon(
                                                   Icons.close,
-                                                  color: Colors.grey[700],
+                                                  color: textColor,
                                                   size: 20,
                                                 ),
                                                 tooltip: 'Close',
@@ -808,7 +1279,7 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
                                                   style: labelStyle,
                                                 ),
                                                 TextSpan(
-                                                  text: bird.breed + '\n',
+                                                  text: '${bird.breed}\n',
                                                 ),
                                                 TextSpan(
                                                   text: 'Quantity: ',
@@ -823,11 +1294,7 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
                                                 ),
                                                 TextSpan(
                                                   text:
-                                                      bird.gender
-                                                          .toString()
-                                                          .split('.')
-                                                          .last +
-                                                      '\n',
+                                                      '${bird.gender.toString().split('.').last}\n',
                                                 ),
                                                 TextSpan(
                                                   text: 'Source: ',
@@ -835,11 +1302,7 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
                                                 ),
                                                 TextSpan(
                                                   text:
-                                                      bird.source
-                                                          .toString()
-                                                          .split('.')
-                                                          .last +
-                                                      '\n',
+                                                      '${bird.source.toString().split('.').last}\n',
                                                 ),
                                                 if (bird.sourceDetail != null &&
                                                     bird
@@ -851,8 +1314,7 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
                                                   ),
                                                   TextSpan(
                                                     text:
-                                                        bird.sourceDetail! +
-                                                        '\n',
+                                                        '${bird.sourceDetail!}\n',
                                                   ),
                                                 ],
                                                 TextSpan(
@@ -861,11 +1323,7 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
                                                 ),
                                                 TextSpan(
                                                   text:
-                                                      bird.date
-                                                          .toLocal()
-                                                          .toString()
-                                                          .split(' ')[0] +
-                                                      '\n',
+                                                      '${bird.date.toLocal().toString().split(' ')[0]}\n',
                                                 ),
                                                 if (bird.arrivalDate !=
                                                     null) ...[
@@ -875,11 +1333,7 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
                                                   ),
                                                   TextSpan(
                                                     text:
-                                                        bird.arrivalDate!
-                                                            .toLocal()
-                                                            .toString()
-                                                            .split(' ')[0] +
-                                                        '\n',
+                                                        '${bird.arrivalDate!.toLocal().toString().split(' ')[0]}\n',
                                                   ),
                                                 ],
                                                 if (bird.isAlive != null) ...[
@@ -889,10 +1343,7 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
                                                   ),
                                                   TextSpan(
                                                     text:
-                                                        (bird.isAlive!
-                                                            ? 'Yes'
-                                                            : 'No') +
-                                                        '\n',
+                                                        '${bird.isAlive! ? 'Yes' : 'No'}\n',
                                                   ),
                                                 ],
                                                 if (bird.healthStatus != null &&
@@ -905,8 +1356,7 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
                                                   ),
                                                   TextSpan(
                                                     text:
-                                                        bird.healthStatus! +
-                                                        '\n',
+                                                        '${bird.healthStatus!}\n',
                                                   ),
                                                 ],
                                                 TextSpan(
@@ -915,24 +1365,14 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
                                                 ),
                                                 TextSpan(
                                                   text:
-                                                      (bird.customBandColor !=
-                                                                  null &&
-                                                              bird
-                                                                  .customBandColor!
-                                                                  .isNotEmpty
-                                                          ? bird.customBandColor!
-                                                          : bird.bandColor
-                                                                .toString()
-                                                                .split('.')
-                                                                .last) +
-                                                      '\n',
+                                                      '${bird.customBandColor != null && bird.customBandColor!.isNotEmpty ? bird.customBandColor! : bird.bandColor.toString().split('.').last}\n',
                                                 ),
                                                 TextSpan(
                                                   text: 'Location: ',
                                                   style: labelStyle,
                                                 ),
                                                 TextSpan(
-                                                  text: bird.location + '\n',
+                                                  text: '${bird.location}\n',
                                                 ),
                                                 if (bird.notes.isNotEmpty) ...[
                                                   TextSpan(
@@ -944,7 +1384,9 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
                                                     style: valueStyle.copyWith(
                                                       fontStyle:
                                                           FontStyle.italic,
-                                                      color: Colors.grey[700],
+                                                      color: isDark
+                                                          ? Colors.grey[300]
+                                                          : Colors.grey[700],
                                                     ),
                                                   ),
                                                 ],
@@ -1029,32 +1471,113 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
             children: [
               GestureDetector(
                 onTap: () {
-                  final aliveBirds = birds.where((b) => b.isAlive == true).toList();
+                  final aliveBirds = birds
+                      .where((b) => b.isAlive == true)
+                      .toList();
                   final Map<String, int> breedCounts = {};
                   for (var b in aliveBirds) {
-                    breedCounts[b.breed] = (breedCounts[b.breed] ?? 0) + b.quantity;
+                    breedCounts[b.breed] =
+                        (breedCounts[b.breed] ?? 0) + b.quantity;
                   }
                   showDialog(
                     context: context,
                     builder: (ctx) {
                       return AlertDialog(
+                        backgroundColor: isDark
+                            ? const Color(0xFF1E1E1E)
+                            : Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         title: Row(
                           children: [
                             Icon(Icons.bar_chart, color: customTileGreen),
                             const SizedBox(width: 8),
-                            const Text('Breed Breakdown (Alive)'),
+                            Expanded(
+                              child: Text(
+                                'Breed Breakdown',
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.black,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: customTileGreen,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Text.rich(
+                                TextSpan(
+                                  children: [
+                                    const TextSpan(
+                                      text: 'Alive: ',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: '$totalQuantity',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  height: 1,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                         content: breedCounts.isEmpty
-                            ? const Text('No alive birds.')
+                            ? Text(
+                                'No alive birds.',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white70
+                                      : Colors.black87,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              )
                             : SizedBox(
                                 width: 260,
                                 child: ListView(
                                   shrinkWrap: true,
                                   children: breedCounts.entries.map((entry) {
                                     return ListTile(
-                                      title: Text(entry.key),
-                                      trailing: Text(entry.value.toString()),
+                                      dense: true,
+                                      title: Text(
+                                        entry.key,
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                      trailing: Text(
+                                        entry.value.toString(),
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? Colors.grey[300]
+                                              : Colors.grey[800],
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 15,
+                                        ),
+                                      ),
                                     );
                                   }).toList(),
                                 ),
@@ -1062,6 +1585,12 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(ctx).pop(),
+                            style: TextButton.styleFrom(
+                              foregroundColor: customTileGreen,
+                              textStyle: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                             child: const Text('Close'),
                           ),
                         ],
@@ -1076,19 +1605,29 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
                       sin(_shakeAnimation.value * 2 * pi * 2) * 4,
                       sin(_shakeAnimation.value * 2 * pi) * 2,
                     );
-                    
+
                     final scale = _bounceAnimation.value;
-                    
+
                     return Transform.translate(
                       offset: shakeOffset,
                       child: Transform.scale(
                         scale: scale,
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 12, right: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: customTileGreen,
                             borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: Text(
                             '$totalQuantity',
@@ -1111,13 +1650,13 @@ class _BirdListScreenState extends State<BirdListScreen> with TickerProviderStat
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => AddEditBirdScreen(birdType: widget.birdType),
+                      builder: (context) =>
+                          AddEditBirdScreen(birdType: widget.birdType),
                     ),
                   );
                 },
                 child: FloatingActionButton(
                   backgroundColor: customTileGreen,
-                  elevation: 0,
                   onPressed: null,
                   child: const Icon(Icons.add, color: Colors.white),
                 ),
@@ -1136,11 +1675,11 @@ class _TileImageCarousel extends StatefulWidget {
   final void Function(String imgPath, List<String> allImages) onTap;
 
   const _TileImageCarousel({
-    Key? key,
+    super.key,
     required this.profileImage,
     required this.additionalImages,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   State<_TileImageCarousel> createState() => _TileImageCarouselState();
@@ -1189,16 +1728,23 @@ class _TileImageCarouselState extends State<_TileImageCarousel> {
           _prevImage();
         }
       },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: SizedBox(
-          width: 60,
-          height: 60,
-          child: Image.file(
-            File(_allImages[_currentIndex]),
-            width: 100,
-            height: 100,
+      child: SizedBox(
+        width: 100,
+        height: 100,
+        child: Container(
+          decoration: const BoxDecoration(shape: BoxShape.circle),
+          clipBehavior: Clip.hardEdge,
+          child: FittedBox(
             fit: BoxFit.cover,
+            child: SizedBox(
+              width: 100,
+              height: 100,
+              child: Image.file(
+                File(_allImages[_currentIndex]),
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+              ),
+            ),
           ),
         ),
       ),

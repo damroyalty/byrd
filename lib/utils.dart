@@ -1,4 +1,4 @@
-library utils;
+library;
 
 DateTime? extractReplacementDate(String notes) {
   final match = RegExp(
